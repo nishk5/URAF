@@ -1,0 +1,21 @@
+# Qwen 2.5-7B Specific Configuration
+llm:
+  model: "qwen2.5-7b-instruct-1m"
+  api_url: "http://localhost:1234/v1/completions"
+  max_tokens: 4000
+  temperature: 0.5
+  top_p: 0.85
+  top_k: 50
+  min_p: 0.2
+  presence_penalty: 1.0
+
+evaluation:
+  readiness_thresholds:
+    Multi-Step Critical Thinking Agent: 7.0
+    Backtracking & Self-Correcting Agent: 6.5
+    Multi-Perspective Analysis Agent: 7.5
+    Decision-Making Agent: 7.0
+    Autonomous Planning Agent: 8.0
+
+storage:
+  benchmark_results_path: "data/qwen2.5-7b-results.json"
