@@ -1,51 +1,25 @@
-import json
-import requests
-from loguru import logger
-import re
+import aiohttp
 import asyncio
-import hashlib
-import pickle
-from pathlib import Path
+import json
+import re
+from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
-
-CACHE_DIR = Path("cache/")
-CACHE_DIR.mkdir(exist_ok=True)
+import guidance
+from .prompt_manager import PromptManager
 
 class LLMClient:
-    """Client for interacting with LLM APIs."""
+    """
+    Enforces structured LLM responses using guidance.
+    """
 
-    def __init__(self, model, api_url, max_tokens=4000, temperature=0.5, top_p=0.85, top_k=50, min_p=0.2, presence_penalty=1.0):
-        """Initialize LLM client with model settings."""
+    def __init__(self, model="qwen2.5-7b-instruct-1m", api_url="http://localhost:1234/v1/completions", 
+                 max_tokens=4000, temperature=0.5, top_p=0.85, top_k=50):
         self.model = model
         self.api_url = api_url
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.top_p = top_p
         self.top_k = top_k
-        self.min_p = min_p
-        self.presence_penalty = presence_penalty
-
-    def _generate_cache_key(self, prompt):
-        """Generates a unique cache key based on the prompt."""
-        data = json.dumps({"prompt": prompt}, sort_keys=True)
-        return hashlib.sha256(data.encode()).hexdigest()
-
-    def _get_cache_path(self, cache_key):
-        """Returns the file path for cached responses."""
-        return CACHE_DIR / f"{cache_key}.pkl"
-
-    def _load_from_cache(self, cache_key):
-        """Loads response from cache if available."""
-        cache_file = self._get_cache_path(cache_key)
-        if cache_file.exists():
-            with open(cache_file, "rb") as f:
-                return pickle.load(f)
-        return None
-
-    def _save_to_cache(self, cache_key, response):
-        """Saves response to cache."""
-        with open(self._get_cache_path(cache_key), "wb") as f:
-            pickle.dump(response, f)
 
     def clean_response(self, text):
         """Clean up LLM response."""
@@ -75,18 +49,16 @@ class LLMClient:
         return text
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2))
-    async def query(self, prompt):
-        """Query the LLM API."""
-        cache_key = self._generate_cache_key(prompt)
-        cached_response = self._load_from_cache(cache_key)
-        if cached_response:
-            return cached_response
-
+    async def query(self, prompt, technique=None):
+        """Query the LLM API with guidance-based structured enforcement."""
         try:
+            # Get structured prompt using guidance
+            structured_prompt = PromptManager.get_structured_prompt(prompt, technique)
+            
             # Format request for LM Studio API
             data = {
                 "model": self.model,
-                "prompt": prompt,
+                "prompt": str(structured_prompt),
                 "max_tokens": self.max_tokens,
                 "temperature": self.temperature,
                 "top_p": self.top_p,
@@ -100,27 +72,29 @@ class LLMClient:
                 "https": None
             }
             
-            response = requests.post(self.api_url, json=data, proxies=proxies)
-            
-            if response.status_code == 200:
-                result = response.json()
-                logger.info(f"🔍 LLM Full API Response: {json.dumps(result, indent=2)}")
-                
-                if result and "choices" in result and len(result["choices"]) > 0:
-                    text = result["choices"][0].get("text", "").strip()
-                    cleaned_text = self.clean_response(text)
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.api_url, json=data, proxies=proxies) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        logger.info(f"🔍 LLM Full API Response: {json.dumps(result, indent=2)}")
+                        
+                        if result and "choices" in result and len(result["choices"]) > 0:
+                            text = result["choices"][0].get("text", "").strip()
+                            cleaned_text = self.clean_response(text)
+                            
+                            # Validate structure
+                            if PromptManager.validate_structure(cleaned_text):
+                                return {
+                                    "summary": cleaned_text,
+                                    "raw_text": prompt
+                                }
+                            else:
+                                logger.warning("⚠️ LLM response did not follow the expected structure. Retrying...")
+                                raise ValueError("Invalid response structure")
                     
-                    response_to_cache = {
-                        "summary": cleaned_text,
-                        "raw_text": prompt
-                    }
-                    self._save_to_cache(cache_key, response_to_cache)
+                    logger.error(f"❌ LLM API Error: {response.status} - {await response.text()}")
+                    return None
                     
-                    return response_to_cache
-            
-            logger.error(f"❌ LLM API Error: {response.status_code} - {response.text}")
-            return None
-            
         except Exception as e:
             logger.error(f"❌ LLM Query Error: {str(e)}")
             return None

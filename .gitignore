@@ -2,3 +2,5 @@
 poetry.lock
 logs/uraf.log
 *.pyc
+cache/*.pkl
+data/benchmark_results.json
