@@ -1,10 +1,10 @@
 import yaml
-import os
-from loguru import logger
 from dotenv import load_dotenv
+from loguru import logger
 
 # Load environment variables from .env
 load_dotenv()
+
 
 class Config:
     """
@@ -13,7 +13,7 @@ class Config:
 
     def __init__(self, config_path="examples/config.yaml"):
         logger.info(f"Loading configuration from {config_path}")
-        with open(config_path, "r") as file:
+        with open(config_path) as file:
             self.config = yaml.safe_load(file)
 
     def get_llm_settings(self):
@@ -27,7 +27,7 @@ class Config:
                 "top_p": 0.85,
                 "top_k": 50,
                 "min_p": 0.2,
-                "presence_penalty": 1.0
+                "presence_penalty": 1.0,
             }
 
         llm_settings = self.config["llm"]

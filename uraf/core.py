@@ -1,6 +1,7 @@
+from uraf.evaluator import Evaluator
 from uraf.llm_client import LLMClient
 from uraf.response_processor import ResponseProcessor
-from uraf.evaluator import Evaluator
+
 
 class URAF:
     """
@@ -28,5 +29,5 @@ class URAF:
             "prompt": prompt,
             "raw_response": raw_response,
             "processed_response": processed_response,
-            "evaluation_result": evaluation_result
+            "evaluation_result": evaluation_result,
         }

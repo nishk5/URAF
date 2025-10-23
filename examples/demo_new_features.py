@@ -6,7 +6,8 @@ Demonstrates all new features added to URAF framework.
 
 import asyncio
 import sys
-sys.path.insert(0, '/home/user/URAF')
+
+sys.path.insert(0, "/home/user/URAF")
 
 from uraf.llm_client import LLMClient
 from uraf.process_reward_model import ProcessRewardModel
@@ -23,9 +24,9 @@ from loguru import logger
 
 async def demo_process_reward_model():
     """Demonstrate Process Reward Model (PRM)."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("DEMO 1: Process Reward Model (PRM)")
-    print("="*60)
+    print("=" * 60)
 
     prm = ProcessRewardModel()
 
@@ -51,9 +52,9 @@ async def demo_process_reward_model():
 
 async def demo_tool_use_system():
     """Demonstrate Tool Use with ReAct Agent."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("DEMO 2: Tool Use System (ReAct Agent)")
-    print("="*60)
+    print("=" * 60)
 
     registry = ToolRegistry()
 
@@ -69,9 +70,9 @@ async def demo_tool_use_system():
 
 async def demo_memory_system():
     """Demonstrate Vector Memory System."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("DEMO 3: Vector Memory System")
-    print("="*60)
+    print("=" * 60)
 
     memory = AgentMemory(persist_directory="data/demo_memory")
 
@@ -98,9 +99,9 @@ async def demo_memory_system():
 
 async def demo_constitutional_ai():
     """Demonstrate Constitutional AI Self-Critique."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("DEMO 4: Constitutional AI Self-Critique")
-    print("="*60)
+    print("=" * 60)
 
     evaluator = ConstitutionalEvaluator()
 
@@ -113,16 +114,16 @@ async def demo_constitutional_ai():
     print(f"   Violations: {critique['num_violations']}")
     print(f"\n   Principle Scores:")
 
-    for principle in critique['principle_scores'][:5]:  # Top 5
+    for principle in critique["principle_scores"][:5]:  # Top 5
         print(f"   - {principle['principle']}: {principle['score']:.2f}")
         print(f"     Feedback: {principle['feedback'][:80]}...")
 
 
 def demo_statistical_analysis():
     """Demonstrate Statistical Analysis."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("DEMO 5: Statistical Analysis")
-    print("="*60)
+    print("=" * 60)
 
     stats = BenchmarkStatistics()
 
@@ -154,9 +155,9 @@ def demo_statistical_analysis():
 
 def demo_moe_routing():
     """Demonstrate Mixture of Experts Routing."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("DEMO 6: Mixture of Experts (MoE) Routing")
-    print("="*60)
+    print("=" * 60)
 
     router = ExpertRouter()
 
@@ -164,7 +165,7 @@ def demo_moe_routing():
         "Calculate the derivative of f(x) = x^3 + 2x",
         "Write a Python function to merge two sorted lists",
         "Analyze the philosophical implications of free will",
-        "Write a creative story about a time traveler"
+        "Write a creative story about a time traveler",
     ]
 
     print(f"\n🎯 Task Routing:")
@@ -178,9 +179,9 @@ def demo_moe_routing():
 
 def demo_adversarial_testing():
     """Demonstrate Adversarial Testing."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("DEMO 7: Adversarial Testing")
-    print("="*60)
+    print("=" * 60)
 
     evaluator = AdversarialEvaluator()
 
@@ -196,9 +197,9 @@ def demo_adversarial_testing():
 
 def demo_explainability():
     """Demonstrate Explainability Module."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("DEMO 8: Explainability & Interpretability")
-    print("="*60)
+    print("=" * 60)
 
     explainer = ExplainabilityModule()
 
@@ -206,7 +207,7 @@ def demo_explainability():
     reasoning_chain = [
         "First, we evaluated all available options.",
         "We found that approach A uses less memory.",
-        "Therefore, approach A is preferable for this use case."
+        "Therefore, approach A is preferable for this use case.",
     ]
 
     explanation = explainer.generate_explanation(decision, reasoning_chain)
@@ -220,9 +221,9 @@ def demo_explainability():
 
 async def main():
     """Run all demos."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🚀 URAF CUTTING-EDGE FEATURES DEMO")
-    print("="*60)
+    print("=" * 60)
     print("\nDemonstrating all new features added to URAF framework...")
 
     try:
@@ -235,13 +236,14 @@ async def main():
         demo_adversarial_testing()
         demo_explainability()
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("✅ All demos completed successfully!")
-        print("="*60)
+        print("=" * 60)
 
     except Exception as e:
         logger.error(f"Demo failed: {e}")
         import traceback
+
         traceback.print_exc()
 
 

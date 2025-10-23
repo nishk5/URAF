@@ -1,5 +1,7 @@
 import random
+
 from loguru import logger
+
 
 class Benchmark:
     """
@@ -12,7 +14,7 @@ class Benchmark:
         "Backtracking & Self-Correcting Agent": "self-critique",
         "Multi-Perspective Analysis Agent": "multi-perspective",
         "Decision-Making Agent": "self-consistency",
-        "Autonomous Planning Agent": "default"
+        "Autonomous Planning Agent": "default",
     }
 
     # Mapping agent types to relevant benchmarks (Including ARC & MMLU-Advanced)
@@ -21,51 +23,51 @@ class Benchmark:
         "Backtracking & Self-Correcting Agent": ["MATH (Math 500)", "PhysicsQA"],
         "Multi-Perspective Analysis Agent": ["TruthfulQA", "LawBench", "MMLU-Advanced"],
         "Decision-Making Agent": ["BBH (BigBench Hard Subset)", "MMLU (Advanced Topics)"],
-        "Autonomous Planning Agent": ["HumanEval", "MBPP"]
+        "Autonomous Planning Agent": ["HumanEval", "MBPP"],
     }
 
     # Expanded Benchmark Question Bank (Including ARC & MMLU-Advanced)
     BENCHMARK_QUESTIONS = {
         "MMLU (Advanced Topics)": [
             "Explain the key principles of Bayesian inference and their application in real-world decision-making.",
-            "Describe the role of entropy in information theory and how it impacts data compression."
+            "Describe the role of entropy in information theory and how it impacts data compression.",
         ],
         "BIG-Bench Hard (BBH)": [
             "Given a logical rule set, determine the most probable conclusion.",
-            "Solve this multi-step reasoning puzzle using deductive logic."
+            "Solve this multi-step reasoning puzzle using deductive logic.",
         ],
         "MATH (Math 500)": [
             "Solve for x: If 2x + 3y = 7 and x - y = 2, find the values of x and y.",
-            "Compute the definite integral of (3x^2 + 2x - 5) dx."
+            "Compute the definite integral of (3x^2 + 2x - 5) dx.",
         ],
         "PhysicsQA": [
             "Explain the relationship between energy and momentum in classical mechanics.",
-            "Given a projectile motion equation, determine the optimal launch angle for maximum range."
+            "Given a projectile motion equation, determine the optimal launch angle for maximum range.",
         ],
         "BBH (BigBench Hard Subset)": [
             "How should a startup balance growth and profitability when seeking funding?",
-            "Analyze the strategic trade-offs between vertical and horizontal scaling in cloud infrastructure."
+            "Analyze the strategic trade-offs between vertical and horizontal scaling in cloud infrastructure.",
         ],
         "LawBench": [
             "Explain how case law precedents influence judicial decisions.",
-            "How does international law address conflicts between sovereignty and human rights?"
+            "How does international law address conflicts between sovereignty and human rights?",
         ],
         "HumanEval": [
             "Write a Python function that returns the nth Fibonacci number.",
-            "Implement an efficient sorting algorithm that operates in O(n log n) complexity."
+            "Implement an efficient sorting algorithm that operates in O(n log n) complexity.",
         ],
         "TruthfulQA": [
             "What are the ethical implications of AI making autonomous medical diagnoses?",
-            "How can policymakers balance free speech and misinformation in digital platforms?"
+            "How can policymakers balance free speech and misinformation in digital platforms?",
         ],
         "ARC (AI2 Reasoning Challenge)": [
             "What is the next number in the pattern: 2, 6, 12, 20, ...?",
-            "Given a sequence of geometric transformations, determine the final shape and position."
+            "Given a sequence of geometric transformations, determine the final shape and position.",
         ],
         "MMLU-Advanced": [
             "Discuss the philosophical implications of the Turing Test in the age of advanced AI.",
-            "Analyze the economic impact of machine learning-driven automation in developing nations."
-        ]
+            "Analyze the economic impact of machine learning-driven automation in developing nations.",
+        ],
     }
 
     @classmethod

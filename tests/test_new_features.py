@@ -94,8 +94,8 @@ class TestToolSystem:
             "iterations": 3,
             "history": [
                 {"action": {"tool": "calculator"}, "observation": {"success": True}},
-                {"action": {"tool": "calculator"}, "observation": {"success": True}}
-            ]
+                {"action": {"tool": "calculator"}, "observation": {"success": True}},
+            ],
         }
 
         metrics = evaluator.evaluate_tool_execution(mock_result)
@@ -118,11 +118,7 @@ class TestMemorySystem:
         memory = AgentMemory(persist_directory="data/test_memory")
 
         # Store memory
-        memory_id = await memory.store(
-            content="The sky is blue",
-            memory_type="semantic",
-            importance=0.8
-        )
+        memory_id = await memory.store(content="The sky is blue", memory_type="semantic", importance=0.8)
         assert memory_id is not None
 
         # Retrieve memory
@@ -156,8 +152,7 @@ class TestConstitutionalAI:
         """Test rule-based critique."""
         evaluator = ConstitutionalEvaluator(llm_client=None)
         result = await evaluator.critique(
-            response="Based on research, the answer is X because of Y.",
-            original_question="What is X?"
+            response="Based on research, the answer is X because of Y.", original_question="What is X?"
         )
 
         assert "overall_score" in result
@@ -169,11 +164,7 @@ class TestConstitutionalAI:
         evaluator = ConstitutionalEvaluator()
         initial_count = len(evaluator.principles)
 
-        custom = ConstitutionalPrinciple(
-            name="Custom Test",
-            question="Is this a test?",
-            weight=1.0
-        )
+        custom = ConstitutionalPrinciple(name="Custom Test", question="Is this a test?", weight=1.0)
         evaluator.add_principle(custom)
 
         assert len(evaluator.principles) == initial_count + 1
@@ -297,10 +288,7 @@ class TestExplainability:
         """Test explanation generation."""
         explainer = ExplainabilityModule()
         decision = "The answer is X"
-        reasoning = [
-            "First, we examine the data",
-            "Therefore, based on evidence, we conclude X"
-        ]
+        reasoning = ["First, we examine the data", "Therefore, based on evidence, we conclude X"]
 
         explanation = explainer.generate_explanation(decision, reasoning)
 

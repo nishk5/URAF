@@ -1,12 +1,12 @@
 import asyncio
-from tqdm.asyncio import tqdm
+
 from loguru import logger
+
 from uraf.benchmark import Benchmark
-from uraf.benchmark_generator import BenchmarkGenerator
-from uraf.llm_client import LLMClient
-from uraf.evaluator import LLMResponseEvaluator
 from uraf.benchmark_tracker import BenchmarkTracker
 from uraf.config_loader import Config
+from uraf.evaluator import LLMResponseEvaluator
+from uraf.llm_client import LLMClient
 from uraf.prompt_manager import PromptManager
 
 

@@ -5,14 +5,13 @@ Implements ReAct (Reasoning + Acting) pattern for tool-augmented LLMs.
 Based on "ReAct: Synergizing Reasoning and Acting in Language Models" (Yao et al., 2023)
 """
 
-import re
 import json
-import asyncio
+import re
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any, Callable
-from loguru import logger
+from typing import Any
+
 import requests
-from datetime import datetime
+from loguru import logger
 
 
 class BaseTool(ABC):
@@ -32,12 +31,12 @@ class BaseTool(ABC):
 
     @property
     @abstractmethod
-    def parameters(self) -> Dict[str, str]:
+    def parameters(self) -> dict[str, str]:
         """Parameter schema for the tool."""
         pass
 
     @abstractmethod
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def execute(self, **kwargs) -> dict[str, Any]:
         """
         Execute the tool with given parameters.
 
@@ -70,12 +69,10 @@ class CalculatorTool(BaseTool):
         return "Perform mathematical calculations. Supports +, -, *, /, **, sqrt, sin, cos, etc."
 
     @property
-    def parameters(self) -> Dict[str, str]:
-        return {
-            "expression": "Mathematical expression to evaluate (e.g., '2 + 2', 'sqrt(16)', 'sin(3.14)')"
-        }
+    def parameters(self) -> dict[str, str]:
+        return {"expression": "Mathematical expression to evaluate (e.g., '2 + 2', 'sqrt(16)', 'sin(3.14)')"}
 
-    async def execute(self, expression: str, **kwargs) -> Dict[str, Any]:
+    async def execute(self, expression: str, **kwargs) -> dict[str, Any]:
         """
         Safely evaluate mathematical expressions.
 
@@ -88,31 +85,33 @@ class CalculatorTool(BaseTool):
         try:
             # Safe eval with limited scope
             import math
+
             safe_dict = {
-                '__builtins__': {},
-                'abs': abs, 'round': round, 'min': min, 'max': max,
-                'sum': sum, 'pow': pow,
-                'sqrt': math.sqrt, 'sin': math.sin, 'cos': math.cos,
-                'tan': math.tan, 'log': math.log, 'exp': math.exp,
-                'pi': math.pi, 'e': math.e
+                "__builtins__": {},
+                "abs": abs,
+                "round": round,
+                "min": min,
+                "max": max,
+                "sum": sum,
+                "pow": pow,
+                "sqrt": math.sqrt,
+                "sin": math.sin,
+                "cos": math.cos,
+                "tan": math.tan,
+                "log": math.log,
+                "exp": math.exp,
+                "pi": math.pi,
+                "e": math.e,
             }
 
             result = eval(expression, safe_dict)
             logger.info(f"Calculator: {expression} = {result}")
 
-            return {
-                "success": True,
-                "result": result,
-                "expression": expression
-            }
+            return {"success": True, "result": result, "expression": expression}
 
         except Exception as e:
             logger.error(f"Calculator error: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "expression": expression
-            }
+            return {"success": False, "error": str(e), "expression": expression}
 
 
 class WebSearchTool(BaseTool):
@@ -127,13 +126,10 @@ class WebSearchTool(BaseTool):
         return "Search the web for information. Returns top search results."
 
     @property
-    def parameters(self) -> Dict[str, str]:
-        return {
-            "query": "Search query string",
-            "num_results": "Number of results to return (default: 3)"
-        }
+    def parameters(self) -> dict[str, str]:
+        return {"query": "Search query string", "num_results": "Number of results to return (default: 3)"}
 
-    async def execute(self, query: str, num_results: int = 3, **kwargs) -> Dict[str, Any]:
+    async def execute(self, query: str, num_results: int = 3, **kwargs) -> dict[str, Any]:
         """
         Perform web search (mock for now).
 
@@ -149,19 +145,14 @@ class WebSearchTool(BaseTool):
 
         mock_results = [
             {
-                "title": f"Result {i+1} for '{query}'",
+                "title": f"Result {i + 1} for '{query}'",
                 "snippet": f"This is a mock search result for {query}. In production, this would be real web data.",
-                "url": f"https://example.com/result{i+1}"
+                "url": f"https://example.com/result{i + 1}",
             }
             for i in range(num_results)
         ]
 
-        return {
-            "success": True,
-            "query": query,
-            "results": mock_results,
-            "num_results": len(mock_results)
-        }
+        return {"success": True, "query": query, "results": mock_results, "num_results": len(mock_results)}
 
 
 class CodeExecutorTool(BaseTool):
@@ -176,13 +167,10 @@ class CodeExecutorTool(BaseTool):
         return "Execute Python code and return the output. Use for data analysis or computations."
 
     @property
-    def parameters(self) -> Dict[str, str]:
-        return {
-            "code": "Python code to execute",
-            "timeout": "Execution timeout in seconds (default: 5)"
-        }
+    def parameters(self) -> dict[str, str]:
+        return {"code": "Python code to execute", "timeout": "Execution timeout in seconds (default: 5)"}
 
-    async def execute(self, code: str, timeout: int = 5, **kwargs) -> Dict[str, Any]:
+    async def execute(self, code: str, timeout: int = 5, **kwargs) -> dict[str, Any]:
         """
         Execute Python code safely.
 
@@ -196,7 +184,6 @@ class CodeExecutorTool(BaseTool):
         try:
             # In production, use docker/sandbox for safety
             import io
-            import sys
             from contextlib import redirect_stdout
 
             # Capture output
@@ -204,25 +191,21 @@ class CodeExecutorTool(BaseTool):
 
             with redirect_stdout(output_buffer):
                 # Limited scope execution
-                exec_globals = {'__builtins__': __builtins__}
+                exec_globals = {"__builtins__": __builtins__}
                 exec(code, exec_globals)
 
             output = output_buffer.getvalue()
-            logger.info(f"Code executed successfully")
+            logger.info("Code executed successfully")
 
             return {
                 "success": True,
                 "output": output,
-                "code": code[:100]  # First 100 chars
+                "code": code[:100],  # First 100 chars
             }
 
         except Exception as e:
             logger.error(f"Code execution error: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "code": code[:100]
-            }
+            return {"success": False, "error": str(e), "code": code[:100]}
 
 
 class WikipediaSearchTool(BaseTool):
@@ -237,12 +220,10 @@ class WikipediaSearchTool(BaseTool):
         return "Search Wikipedia for factual information. Returns article summary."
 
     @property
-    def parameters(self) -> Dict[str, str]:
-        return {
-            "query": "Topic to search on Wikipedia"
-        }
+    def parameters(self) -> dict[str, str]:
+        return {"query": "Topic to search on Wikipedia"}
 
-    async def execute(self, query: str, **kwargs) -> Dict[str, Any]:
+    async def execute(self, query: str, **kwargs) -> dict[str, Any]:
         """
         Search Wikipedia API.
 
@@ -265,22 +246,14 @@ class WikipediaSearchTool(BaseTool):
                     "query": query,
                     "title": data.get("title", ""),
                     "summary": data.get("extract", ""),
-                    "url": data.get("content_urls", {}).get("desktop", {}).get("page", "")
+                    "url": data.get("content_urls", {}).get("desktop", {}).get("page", ""),
                 }
             else:
-                return {
-                    "success": False,
-                    "error": f"Wikipedia returned status {response.status_code}",
-                    "query": query
-                }
+                return {"success": False, "error": f"Wikipedia returned status {response.status_code}", "query": query}
 
         except Exception as e:
             logger.error(f"Wikipedia search error: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "query": query
-            }
+            return {"success": False, "error": str(e), "query": query}
 
 
 class ToolRegistry:
@@ -288,17 +261,12 @@ class ToolRegistry:
 
     def __init__(self):
         """Initialize tool registry with default tools."""
-        self.tools: Dict[str, BaseTool] = {}
+        self.tools: dict[str, BaseTool] = {}
         self._register_default_tools()
 
     def _register_default_tools(self):
         """Register default built-in tools."""
-        default_tools = [
-            CalculatorTool(),
-            WebSearchTool(),
-            CodeExecutorTool(),
-            WikipediaSearchTool()
-        ]
+        default_tools = [CalculatorTool(), WebSearchTool(), CodeExecutorTool(), WikipediaSearchTool()]
 
         for tool in default_tools:
             self.register_tool(tool)
@@ -315,11 +283,11 @@ class ToolRegistry:
         self.tools[tool.name] = tool
         logger.info(f"Registered tool: {tool.name}")
 
-    def get_tool(self, name: str) -> Optional[BaseTool]:
+    def get_tool(self, name: str) -> BaseTool | None:
         """Get tool by name."""
         return self.tools.get(name)
 
-    def list_tools(self) -> List[Dict[str, str]]:
+    def list_tools(self) -> list[dict[str, str]]:
         """
         List all available tools with descriptions.
 
@@ -327,15 +295,11 @@ class ToolRegistry:
             List of tool metadata
         """
         return [
-            {
-                "name": tool.name,
-                "description": tool.description,
-                "parameters": tool.parameters
-            }
+            {"name": tool.name, "description": tool.description, "parameters": tool.parameters}
             for tool in self.tools.values()
         ]
 
-    async def execute_tool(self, tool_name: str, **parameters) -> Dict[str, Any]:
+    async def execute_tool(self, tool_name: str, **parameters) -> dict[str, Any]:
         """
         Execute a tool by name.
 
@@ -350,16 +314,10 @@ class ToolRegistry:
 
         if not tool:
             logger.error(f"Tool not found: {tool_name}")
-            return {
-                "success": False,
-                "error": f"Unknown tool: {tool_name}"
-            }
+            return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
         if not tool.validate_parameters(**parameters):
-            return {
-                "success": False,
-                "error": f"Invalid parameters for {tool_name}"
-            }
+            return {"success": False, "error": f"Invalid parameters for {tool_name}"}
 
         return await tool.execute(**parameters)
 
@@ -371,7 +329,7 @@ class ReActAgent:
     Implements the Thought-Action-Observation loop.
     """
 
-    def __init__(self, llm_client, tool_registry: Optional[ToolRegistry] = None):
+    def __init__(self, llm_client, tool_registry: ToolRegistry | None = None):
         """
         Initialize ReAct agent.
 
@@ -382,10 +340,10 @@ class ReActAgent:
         self.llm = llm_client
         self.tool_registry = tool_registry or ToolRegistry()
         self.max_iterations = 10
-        self.execution_history: List[Dict] = []
+        self.execution_history: list[dict] = []
         logger.info("Initialized ReAct agent")
 
-    def _parse_action(self, response: str) -> Optional[Dict[str, Any]]:
+    def _parse_action(self, response: str) -> dict[str, Any] | None:
         """
         Parse action from LLM response.
 
@@ -400,21 +358,21 @@ class ReActAgent:
             Parsed action dict or None
         """
         # Extract action
-        action_match = re.search(r'Action:\s*(\w+)', response, re.IGNORECASE)
+        action_match = re.search(r"Action:\s*(\w+)", response, re.IGNORECASE)
         if not action_match:
             return None
 
         tool_name = action_match.group(1).strip()
 
         # Extract action input
-        input_match = re.search(r'Action Input:\s*({.*?}|\w+.*?)(?:\n|$)', response, re.IGNORECASE | re.DOTALL)
+        input_match = re.search(r"Action Input:\s*({.*?}|\w+.*?)(?:\n|$)", response, re.IGNORECASE | re.DOTALL)
 
         if input_match:
             input_str = input_match.group(1).strip()
 
             # Try to parse as JSON
             try:
-                if input_str.startswith('{'):
+                if input_str.startswith("{"):
                     action_input = json.loads(input_str)
                 else:
                     # Simple string parameter
@@ -424,12 +382,9 @@ class ReActAgent:
         else:
             action_input = {}
 
-        return {
-            "tool": tool_name,
-            "parameters": action_input
-        }
+        return {"tool": tool_name, "parameters": action_input}
 
-    def _create_react_prompt(self, task: str, history: List[Dict]) -> str:
+    def _create_react_prompt(self, task: str, history: list[dict]) -> str:
         """
         Create ReAct-style prompt with task and execution history.
 
@@ -440,16 +395,13 @@ class ReActAgent:
         Returns:
             Formatted prompt
         """
-        tools_desc = "\n".join([
-            f"- {tool['name']}: {tool['description']}"
-            for tool in self.tool_registry.list_tools()
-        ])
+        tools_desc = "\n".join([f"- {tool['name']}: {tool['description']}" for tool in self.tool_registry.list_tools()])
 
         history_text = ""
         for i, entry in enumerate(history):
-            history_text += f"\nIteration {i+1}:\n"
+            history_text += f"\nIteration {i + 1}:\n"
             history_text += f"Thought: {entry.get('thought', '')}\n"
-            if 'action' in entry:
+            if "action" in entry:
                 history_text += f"Action: {entry['action']['tool']}\n"
                 history_text += f"Action Input: {entry['action']['parameters']}\n"
                 history_text += f"Observation: {entry.get('observation', '')}\n"
@@ -478,7 +430,7 @@ Your response:"""
 
         return prompt
 
-    async def solve(self, task: str) -> Dict[str, Any]:
+    async def solve(self, task: str) -> dict[str, Any]:
         """
         Solve a task using ReAct loop.
 
@@ -506,11 +458,11 @@ Your response:"""
                     "success": False,
                     "error": f"LLM error: {str(e)}",
                     "iterations": iteration + 1,
-                    "history": self.execution_history
+                    "history": self.execution_history,
                 }
 
             # Check for final answer
-            final_answer_match = re.search(r'Final Answer:\s*(.*)', response_text, re.IGNORECASE | re.DOTALL)
+            final_answer_match = re.search(r"Final Answer:\s*(.*)", response_text, re.IGNORECASE | re.DOTALL)
 
             if final_answer_match:
                 final_answer = final_answer_match.group(1).strip()
@@ -520,7 +472,7 @@ Your response:"""
                     "success": True,
                     "final_answer": final_answer,
                     "iterations": iteration + 1,
-                    "history": self.execution_history
+                    "history": self.execution_history,
                 }
 
             # Parse action
@@ -528,28 +480,24 @@ Your response:"""
 
             if not action:
                 # No action found, just record thought
-                thought_match = re.search(r'Thought:\s*(.*?)(?:\n|$)', response_text, re.IGNORECASE)
+                thought_match = re.search(r"Thought:\s*(.*?)(?:\n|$)", response_text, re.IGNORECASE)
                 thought = thought_match.group(1).strip() if thought_match else response_text[:200]
 
-                self.execution_history.append({
-                    "iteration": iteration + 1,
-                    "thought": thought
-                })
+                self.execution_history.append({"iteration": iteration + 1, "thought": thought})
                 continue
 
             # Execute tool
-            observation = await self.tool_registry.execute_tool(
-                action["tool"],
-                **action["parameters"]
-            )
+            observation = await self.tool_registry.execute_tool(action["tool"], **action["parameters"])
 
             # Record execution
-            self.execution_history.append({
-                "iteration": iteration + 1,
-                "thought": response_text[:200],
-                "action": action,
-                "observation": observation
-            })
+            self.execution_history.append(
+                {
+                    "iteration": iteration + 1,
+                    "thought": response_text[:200],
+                    "action": action,
+                    "observation": observation,
+                }
+            )
 
             logger.info(f"Iteration {iteration + 1}: Used {action['tool']}")
 
@@ -559,7 +507,7 @@ Your response:"""
             "success": False,
             "error": f"Max iterations ({self.max_iterations}) reached without solution",
             "iterations": self.max_iterations,
-            "history": self.execution_history
+            "history": self.execution_history,
         }
 
 
@@ -570,7 +518,7 @@ class ToolUseEvaluator:
         """Initialize tool use evaluator."""
         self.metrics = []
 
-    def evaluate_tool_execution(self, react_result: Dict[str, Any]) -> Dict[str, float]:
+    def evaluate_tool_execution(self, react_result: dict[str, Any]) -> dict[str, float]:
         """
         Evaluate quality of tool use in ReAct execution.
 
@@ -587,15 +535,12 @@ class ToolUseEvaluator:
                 "tool_selection_accuracy": 0.0,
                 "execution_success_rate": 0.0,
                 "efficiency_score": 0.0,
-                "overall_tool_score": 0.0
+                "overall_tool_score": 0.0,
             }
 
         # Count successful tool executions
         tool_executions = [h for h in history if "action" in h]
-        successful_executions = [
-            h for h in tool_executions
-            if h.get("observation", {}).get("success", False)
-        ]
+        successful_executions = [h for h in tool_executions if h.get("observation", {}).get("success", False)]
 
         execution_success_rate = len(successful_executions) / len(tool_executions) if tool_executions else 0.0
 
@@ -606,11 +551,7 @@ class ToolUseEvaluator:
         # Success bonus
         success_bonus = 0.3 if react_result.get("success", False) else 0.0
 
-        overall_score = (
-            execution_success_rate * 0.5 +
-            efficiency_score * 0.3 +
-            success_bonus
-        )
+        overall_score = execution_success_rate * 0.5 + efficiency_score * 0.3 + success_bonus
 
         return {
             "tool_selection_accuracy": float(execution_success_rate),
@@ -618,5 +559,5 @@ class ToolUseEvaluator:
             "efficiency_score": float(efficiency_score),
             "num_tool_calls": len(tool_executions),
             "successful_calls": len(successful_executions),
-            "overall_tool_score": float(overall_score)
+            "overall_tool_score": float(overall_score),
         }

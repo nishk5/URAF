@@ -6,11 +6,11 @@ Based on "Let's Verify Step by Step" (OpenAI, 2023)
 """
 
 import re
-from typing import List, Dict, Tuple, Optional
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+
 import numpy as np
 from loguru import logger
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 class ProcessRewardModel:
@@ -34,7 +34,7 @@ class ProcessRewardModel:
         self.embedding_model = SentenceTransformer(model_name)
         logger.info(f"Initialized PRM with embedding model: {model_name}")
 
-    def parse_reasoning_steps(self, response: str) -> List[str]:
+    def parse_reasoning_steps(self, response: str) -> list[str]:
         """
         Extract individual reasoning steps from structured response.
 
@@ -45,11 +45,7 @@ class ProcessRewardModel:
             List of individual reasoning steps
         """
         # Extract reasoning pathway section
-        reasoning_match = re.search(
-            r'\*Reasoning Pathway:\*(.*?)(?:\*|$)',
-            response,
-            re.DOTALL | re.IGNORECASE
-        )
+        reasoning_match = re.search(r"\*Reasoning Pathway:\*(.*?)(?:\*|$)", response, re.DOTALL | re.IGNORECASE)
 
         if not reasoning_match:
             logger.warning("No reasoning pathway found in response")
@@ -58,13 +54,13 @@ class ProcessRewardModel:
         reasoning_text = reasoning_match.group(1).strip()
 
         # Split by common step delimiters
-        steps = re.split(r'\n(?=\d+\.|\-|\*|Step)', reasoning_text)
+        steps = re.split(r"\n(?=\d+\.|\-|\*|Step)", reasoning_text)
         steps = [s.strip() for s in steps if s.strip() and len(s.strip()) > 10]
 
         logger.debug(f"Parsed {len(steps)} reasoning steps")
         return steps
 
-    def evaluate_step_correctness(self, step: str, context: str = "") -> Dict[str, float]:
+    def evaluate_step_correctness(self, step: str, context: str = "") -> dict[str, float]:
         """
         Evaluate individual step quality.
 
@@ -85,24 +81,34 @@ class ProcessRewardModel:
 
         # Logical connectives boost score
         logical_patterns = [
-            r'\btherefore\b', r'\bthus\b', r'\bhence\b', r'\bconsequently\b',
-            r'\bbecause\b', r'\bsince\b', r'\bgiven that\b',
-            r'\bif\b.*\bthen\b', r'\bimplies\b'
+            r"\btherefore\b",
+            r"\bthus\b",
+            r"\bhence\b",
+            r"\bconsequently\b",
+            r"\bbecause\b",
+            r"\bsince\b",
+            r"\bgiven that\b",
+            r"\bif\b.*\bthen\b",
+            r"\bimplies\b",
         ]
         for pattern in logical_patterns:
             if re.search(pattern, step, re.IGNORECASE):
                 score += 0.1
 
         # Concrete evidence boosts score
-        if re.search(r'\d+', step):  # Contains numbers
+        if re.search(r"\d+", step):  # Contains numbers
             score += 0.1
-        if re.search(r'for example|such as|specifically', step, re.IGNORECASE):
+        if re.search(r"for example|such as|specifically", step, re.IGNORECASE):
             score += 0.1
 
         # Uncertainty reduces score
         uncertainty_patterns = [
-            r'\bmaybe\b', r'\bmight\b', r'\bcould be\b', r'\bpossibly\b',
-            r'\bperhaps\b', r'\bprobably\b'
+            r"\bmaybe\b",
+            r"\bmight\b",
+            r"\bcould be\b",
+            r"\bpossibly\b",
+            r"\bperhaps\b",
+            r"\bprobably\b",
         ]
         for pattern in uncertainty_patterns:
             if re.search(pattern, step, re.IGNORECASE):
@@ -115,12 +121,9 @@ class ProcessRewardModel:
         elif word_count > 100:
             score -= 0.05
 
-        return {
-            "correctness_score": np.clip(score, 0.0, 1.0),
-            "word_count": word_count
-        }
+        return {"correctness_score": np.clip(score, 0.0, 1.0), "word_count": word_count}
 
-    def evaluate_consistency(self, steps: List[str]) -> Dict[str, float]:
+    def evaluate_consistency(self, steps: list[str]) -> dict[str, float]:
         """
         Evaluate logical consistency across reasoning steps using embeddings.
 
@@ -131,11 +134,7 @@ class ProcessRewardModel:
             Dict with consistency metrics
         """
         if len(steps) < 2:
-            return {
-                "avg_step_similarity": 1.0,
-                "min_step_similarity": 1.0,
-                "consistency_score": 1.0
-            }
+            return {"avg_step_similarity": 1.0, "min_step_similarity": 1.0, "consistency_score": 1.0}
 
         # Compute embeddings for all steps
         embeddings = self.embedding_model.encode(steps)
@@ -143,10 +142,7 @@ class ProcessRewardModel:
         # Calculate pairwise similarities between adjacent steps
         similarities = []
         for i in range(len(embeddings) - 1):
-            sim = cosine_similarity(
-                embeddings[i].reshape(1, -1),
-                embeddings[i + 1].reshape(1, -1)
-            )[0][0]
+            sim = cosine_similarity(embeddings[i].reshape(1, -1), embeddings[i + 1].reshape(1, -1))[0][0]
             similarities.append(sim)
 
         avg_similarity = np.mean(similarities)
@@ -160,10 +156,10 @@ class ProcessRewardModel:
         return {
             "avg_step_similarity": float(avg_similarity),
             "min_step_similarity": float(min_similarity),
-            "consistency_score": float(np.clip(consistency_score, 0.0, 1.0))
+            "consistency_score": float(np.clip(consistency_score, 0.0, 1.0)),
         }
 
-    def detect_self_correction(self, steps: List[str]) -> Dict[str, any]:
+    def detect_self_correction(self, steps: list[str]) -> dict[str, any]:
         """
         Detect and reward self-correction / backtracking in reasoning.
 
@@ -174,20 +170,29 @@ class ProcessRewardModel:
             Dict with correction detection results
         """
         correction_patterns = [
-            r'\bwait\b', r'\bactually\b', r'\bhowever\b', r'\bon second thought\b',
-            r'\bupon reflection\b', r'\bcorrect(?:ing|ion)\b', r'\brevise\b',
-            r'\blet me reconsider\b', r'\bmistake\b', r'\berror\b'
+            r"\bwait\b",
+            r"\bactually\b",
+            r"\bhowever\b",
+            r"\bon second thought\b",
+            r"\bupon reflection\b",
+            r"\bcorrect(?:ing|ion)\b",
+            r"\brevise\b",
+            r"\blet me reconsider\b",
+            r"\bmistake\b",
+            r"\berror\b",
         ]
 
         corrections = []
         for i, step in enumerate(steps):
             for pattern in correction_patterns:
                 if re.search(pattern, step, re.IGNORECASE):
-                    corrections.append({
-                        "step_index": i,
-                        "step_text": step[:100],  # First 100 chars
-                        "pattern_matched": pattern
-                    })
+                    corrections.append(
+                        {
+                            "step_index": i,
+                            "step_text": step[:100],  # First 100 chars
+                            "pattern_matched": pattern,
+                        }
+                    )
                     break
 
         correction_bonus = len(corrections) * 0.15
@@ -196,10 +201,10 @@ class ProcessRewardModel:
         return {
             "num_corrections": len(corrections),
             "correction_details": corrections,
-            "correction_bonus": correction_bonus
+            "correction_bonus": correction_bonus,
         }
 
-    def evaluate_progress(self, steps: List[str], initial_problem: str) -> float:
+    def evaluate_progress(self, steps: list[str], initial_problem: str) -> float:
         """
         Measure whether reasoning progresses toward solution.
 
@@ -223,8 +228,8 @@ class ProcessRewardModel:
         similarities = cosine_similarity(step_embeddings, problem_embedding).flatten()
 
         # Check if later steps maintain relevance (not drifting)
-        first_half_sim = np.mean(similarities[:len(similarities)//2]) if len(similarities) > 1 else similarities[0]
-        second_half_sim = np.mean(similarities[len(similarities)//2:]) if len(similarities) > 1 else similarities[0]
+        first_half_sim = np.mean(similarities[: len(similarities) // 2]) if len(similarities) > 1 else similarities[0]
+        second_half_sim = np.mean(similarities[len(similarities) // 2 :]) if len(similarities) > 1 else similarities[0]
 
         # Progress score: maintain or increase relevance
         if second_half_sim >= first_half_sim * 0.85:  # Allow 15% drift
@@ -234,11 +239,7 @@ class ProcessRewardModel:
 
         return float(np.clip(progress_score, 0.0, 1.0))
 
-    def evaluate_reasoning_chain(
-        self,
-        response: str,
-        problem: Optional[str] = None
-    ) -> Dict[str, any]:
+    def evaluate_reasoning_chain(self, response: str, problem: str | None = None) -> dict[str, any]:
         """
         Complete process reward evaluation of reasoning chain.
 
@@ -263,7 +264,7 @@ class ProcessRewardModel:
                 "consistency_metrics": {},
                 "self_correction": {},
                 "progress_score": 0.0,
-                "final_prm_score": 0.0
+                "final_prm_score": 0.0,
             }
 
         # Evaluate each step
@@ -286,10 +287,10 @@ class ProcessRewardModel:
 
         # Calculate final PRM score (weighted combination)
         final_score = (
-            avg_correctness * 0.40 +        # Step correctness: 40%
-            consistency["consistency_score"] * 0.35 +  # Consistency: 35%
-            progress * 0.15 +                # Progress: 15%
-            correction["correction_bonus"]   # Self-correction bonus: 10%
+            avg_correctness * 0.40  # Step correctness: 40%
+            + consistency["consistency_score"] * 0.35  # Consistency: 35%
+            + progress * 0.15  # Progress: 15%
+            + correction["correction_bonus"]  # Self-correction bonus: 10%
         )
 
         final_score = np.clip(final_score, 0.0, 1.0)
@@ -303,15 +304,10 @@ class ProcessRewardModel:
             "consistency_metrics": consistency,
             "self_correction": correction,
             "progress_score": float(progress),
-            "final_prm_score": float(final_score)
+            "final_prm_score": float(final_score),
         }
 
-    def compare_reasoning_chains(
-        self,
-        response_a: str,
-        response_b: str,
-        problem: Optional[str] = None
-    ) -> Dict[str, any]:
+    def compare_reasoning_chains(self, response_a: str, response_b: str, problem: str | None = None) -> dict[str, any]:
         """
         Compare two reasoning chains using PRM.
 
@@ -334,7 +330,7 @@ class ProcessRewardModel:
             "response_a_evaluation": eval_a,
             "response_b_evaluation": eval_b,
             "winner": winner,
-            "score_difference": abs(eval_a["final_prm_score"] - eval_b["final_prm_score"])
+            "score_difference": abs(eval_a["final_prm_score"] - eval_b["final_prm_score"]),
         }
 
 
@@ -355,12 +351,7 @@ class StepValidator:
         self.llm_client = llm_client
         self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
-    async def validate_step_async(
-        self,
-        step: str,
-        previous_steps: List[str],
-        problem: str
-    ) -> Dict[str, any]:
+    async def validate_step_async(self, step: str, previous_steps: list[str], problem: str) -> dict[str, any]:
         """
         Validate a single step using LLM.
 
@@ -374,11 +365,7 @@ class StepValidator:
         """
         if not self.llm_client:
             # Fallback to rule-based validation
-            return {
-                "is_valid": True,
-                "confidence": 0.7,
-                "feedback": "No LLM validator available, using rules"
-            }
+            return {"is_valid": True, "confidence": 0.7, "feedback": "No LLM validator available, using rules"}
 
         validation_prompt = f"""
 You are a reasoning step validator. Evaluate if this reasoning step is logically valid.
@@ -386,7 +373,7 @@ You are a reasoning step validator. Evaluate if this reasoning step is logically
 Problem: {problem}
 
 Previous Steps:
-{chr(10).join([f"{i+1}. {s}" for i, s in enumerate(previous_steps)])}
+{chr(10).join([f"{i + 1}. {s}" for i, s in enumerate(previous_steps)])}
 
 Current Step to Validate: {step}
 
@@ -406,15 +393,7 @@ Feedback: [Brief explanation]
             # Parse response
             is_valid = "yes" in response.get("summary", "").lower()
 
-            return {
-                "is_valid": is_valid,
-                "confidence": 0.8,
-                "feedback": response.get("summary", "")[:200]
-            }
+            return {"is_valid": is_valid, "confidence": 0.8, "feedback": response.get("summary", "")[:200]}
         except Exception as e:
             logger.error(f"Step validation failed: {e}")
-            return {
-                "is_valid": True,
-                "confidence": 0.5,
-                "feedback": f"Validation error: {str(e)}"
-            }
+            return {"is_valid": True, "confidence": 0.5, "feedback": f"Validation error: {str(e)}"}

@@ -1,6 +1,7 @@
-import asyncio
 from loguru import logger
+
 from uraf.llm_client import LLMClient
+
 
 class BenchmarkGenerator:
     """
@@ -59,7 +60,7 @@ class BenchmarkGenerator:
 
     async def generate_new_question(self, agent_type):
         """Generates benchmark questions using cognitive frameworks."""
-        
+
         agent_prompts = {
             "Multi-Step Critical Thinking Agent": """
                 Design a question requiring:
@@ -70,7 +71,6 @@ class BenchmarkGenerator:
                 
                 Example: "Given a sequence of numbers, identify the underlying pattern and predict the next value."
                 """,
-                
             "Backtracking & Self-Correcting Agent": """
                 Design a question requiring:
                 - Multiple solution paths
@@ -80,7 +80,6 @@ class BenchmarkGenerator:
                 
                 Example: "Find all possible ways to arrange N queens on an NxN chessboard without any queen threatening another."
                 """,
-                
             "Multi-Perspective Analysis Agent": """
                 Design a question requiring:
                 - Multiple viewpoints
@@ -90,7 +89,6 @@ class BenchmarkGenerator:
                 
                 Example: "Analyze a complex policy decision considering economic, social, and environmental impacts."
                 """,
-                
             "Decision-Making Agent": """
                 Design a question requiring:
                 - Trade-off analysis
@@ -100,7 +98,6 @@ class BenchmarkGenerator:
                 
                 Example: "Optimize a portfolio allocation given risk constraints and return objectives."
                 """,
-                
             "Autonomous Planning Agent": """
                 Design a question requiring:
                 - Constraint handling
@@ -109,7 +106,7 @@ class BenchmarkGenerator:
                 Focus: Planning or architecture
                 
                 Example: "Design a robust system architecture that handles component failures gracefully."
-                """
+                """,
         }
 
         # Generate question based on agent type
@@ -133,12 +130,12 @@ Your response must be:
 """
 
         logger.info(f"📝 Generating benchmark for {agent_type}...")
-        
+
         response = await self.llm.query(prompt)
 
         if response and "summary" in response:
             logger.info(f"✅ Generated: {response['summary']}")
-            return response['summary']
-        
+            return response["summary"]
+
         logger.error("❌ Generation failed")
         return "Error: Failed to generate question."

@@ -2,6 +2,7 @@ import json
 import os
 from datetime import datetime
 
+
 class BenchmarkTracker:
     """
     Tracks LLM benchmark results for agent-based evaluations.
@@ -20,7 +21,7 @@ class BenchmarkTracker:
             "timestamp": datetime.utcnow().isoformat(),
             "model": model_name,
             "agent_type": agent_type,
-            "evaluation": evaluation
+            "evaluation": evaluation,
         }
 
         with open(self.save_path, "a") as f:
@@ -34,7 +35,7 @@ class BenchmarkTracker:
         if not os.path.exists(self.save_path):
             return []
 
-        with open(self.save_path, "r") as f:
+        with open(self.save_path) as f:
             return [json.loads(line) for line in f.readlines()]
 
     def compare_models(self):

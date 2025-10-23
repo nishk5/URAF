@@ -6,33 +6,30 @@ Based on "Improving Factuality and Reasoning through Multiagent Debate" (Du et a
 """
 
 import asyncio
-from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 
 
 @dataclass
 class AgentResponse:
     """Response from a single agent in debate."""
+
     agent_id: str
     round_number: int
     response: str
     confidence: float = 0.5
-    reasoning: Optional[str] = None
+    reasoning: str | None = None
 
 
 class DebateAgent:
     """Individual agent participating in debate."""
 
-    def __init__(
-        self,
-        agent_id: str,
-        llm_client,
-        perspective: Optional[str] = None
-    ):
+    def __init__(self, agent_id: str, llm_client, perspective: str | None = None):
         """
         Initialize debate agent.
 
@@ -44,7 +41,7 @@ class DebateAgent:
         self.agent_id = agent_id
         self.llm_client = llm_client
         self.perspective = perspective or "neutral"
-        self.responses: List[AgentResponse] = []
+        self.responses: list[AgentResponse] = []
         logger.info(f"Initialized DebateAgent: {agent_id} ({self.perspective})")
 
     async def generate_initial_response(self, problem: str) -> AgentResponse:
@@ -64,10 +61,7 @@ class DebateAgent:
             response_text = response.get("summary", "") if isinstance(response, dict) else str(response)
 
             agent_response = AgentResponse(
-                agent_id=self.agent_id,
-                round_number=1,
-                response=response_text,
-                confidence=0.6
+                agent_id=self.agent_id, round_number=1, response=response_text, confidence=0.6
             )
 
             self.responses.append(agent_response)
@@ -77,18 +71,10 @@ class DebateAgent:
 
         except Exception as e:
             logger.error(f"Agent {self.agent_id} failed to generate response: {e}")
-            return AgentResponse(
-                agent_id=self.agent_id,
-                round_number=1,
-                response=f"Error: {str(e)}",
-                confidence=0.0
-            )
+            return AgentResponse(agent_id=self.agent_id, round_number=1, response=f"Error: {str(e)}", confidence=0.0)
 
     async def generate_critique(
-        self,
-        problem: str,
-        other_responses: List[AgentResponse],
-        round_number: int
+        self, problem: str, other_responses: list[AgentResponse], round_number: int
     ) -> AgentResponse:
         """
         Generate critique of other agents' responses.
@@ -108,10 +94,7 @@ class DebateAgent:
             response_text = response.get("summary", "") if isinstance(response, dict) else str(response)
 
             agent_response = AgentResponse(
-                agent_id=self.agent_id,
-                round_number=round_number,
-                response=response_text,
-                confidence=0.7
+                agent_id=self.agent_id, round_number=round_number, response=response_text, confidence=0.7
             )
 
             self.responses.append(agent_response)
@@ -122,10 +105,7 @@ class DebateAgent:
         except Exception as e:
             logger.error(f"Agent {self.agent_id} failed critique: {e}")
             return AgentResponse(
-                agent_id=self.agent_id,
-                round_number=round_number,
-                response=f"Error: {str(e)}",
-                confidence=0.0
+                agent_id=self.agent_id, round_number=round_number, response=f"Error: {str(e)}", confidence=0.0
             )
 
     def _create_initial_prompt(self, problem: str) -> str:
@@ -134,7 +114,9 @@ class DebateAgent:
         if self.perspective == "optimistic":
             perspective_instruction = "Approach this problem with an optimistic, solution-focused perspective."
         elif self.perspective == "critical":
-            perspective_instruction = "Approach this problem with a critical, skeptical perspective. Identify potential issues."
+            perspective_instruction = (
+                "Approach this problem with a critical, skeptical perspective. Identify potential issues."
+            )
         elif self.perspective == "creative":
             perspective_instruction = "Approach this problem with creative, unconventional thinking."
 
@@ -152,18 +134,11 @@ Provide your solution with clear reasoning. Structure your response as:
 
 Your response:"""
 
-    def _create_critique_prompt(
-        self,
-        problem: str,
-        other_responses: List[AgentResponse],
-        round_number: int
-    ) -> str:
+    def _create_critique_prompt(self, problem: str, other_responses: list[AgentResponse], round_number: int) -> str:
         """Create prompt for critique round."""
-        other_responses_text = "\n\n".join([
-            f"Agent {r.agent_id}:\n{r.response}"
-            for r in other_responses
-            if r.agent_id != self.agent_id
-        ])
+        other_responses_text = "\n\n".join(
+            [f"Agent {r.agent_id}:\n{r.response}" for r in other_responses if r.agent_id != self.agent_id]
+        )
 
         return f"""You are in round {round_number} of a multi-agent debate.
 
@@ -202,11 +177,7 @@ class MediatorAgent:
         self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
         logger.info("Initialized MediatorAgent")
 
-    async def synthesize(
-        self,
-        problem: str,
-        all_responses: List[List[AgentResponse]]
-    ) -> Dict[str, Any]:
+    async def synthesize(self, problem: str, all_responses: list[list[AgentResponse]]) -> dict[str, Any]:
         """
         Synthesize debate into final answer.
 
@@ -236,22 +207,14 @@ class MediatorAgent:
                 "final_answer": response_text,
                 "consensus_score": consensus_score,
                 "num_agents": len(set(r.agent_id for r in flat_responses)),
-                "num_rounds": len(all_responses)
+                "num_rounds": len(all_responses),
             }
 
         except Exception as e:
             logger.error(f"Mediation failed: {e}")
-            return {
-                "final_answer": f"Mediation error: {str(e)}",
-                "consensus_score": 0.0,
-                "error": str(e)
-            }
+            return {"final_answer": f"Mediation error: {str(e)}", "consensus_score": 0.0, "error": str(e)}
 
-    def _create_synthesis_prompt(
-        self,
-        problem: str,
-        responses: List[AgentResponse]
-    ) -> str:
+    def _create_synthesis_prompt(self, problem: str, responses: list[AgentResponse]) -> str:
         """Create prompt for synthesis."""
         # Group by agent
         by_agent = {}
@@ -287,7 +250,7 @@ Provide your synthesis in this format:
 
 Your synthesis:"""
 
-    def _calculate_consensus(self, responses: List[AgentResponse]) -> float:
+    def _calculate_consensus(self, responses: list[AgentResponse]) -> float:
         """
         Calculate consensus score among responses.
 
@@ -317,10 +280,7 @@ Your synthesis:"""
         similarities = []
         for i in range(len(embeddings)):
             for j in range(i + 1, len(embeddings)):
-                sim = cosine_similarity(
-                    embeddings[i].reshape(1, -1),
-                    embeddings[j].reshape(1, -1)
-                )[0][0]
+                sim = cosine_similarity(embeddings[i].reshape(1, -1), embeddings[j].reshape(1, -1))[0][0]
                 similarities.append(sim)
 
         return float(np.mean(similarities)) if similarities else 0.0
@@ -333,12 +293,7 @@ class MultiAgentDebate:
     Orchestrates debate between multiple agents to reach better solutions.
     """
 
-    def __init__(
-        self,
-        llm_clients: List,
-        num_rounds: int = 3,
-        perspectives: Optional[List[str]] = None
-    ):
+    def __init__(self, llm_clients: list, num_rounds: int = 3, perspectives: list[str] | None = None):
         """
         Initialize debate system.
 
@@ -357,17 +312,17 @@ class MultiAgentDebate:
             DebateAgent(
                 agent_id=f"agent_{i}",
                 llm_client=client,
-                perspective=perspectives[i] if i < len(perspectives) else "neutral"
+                perspective=perspectives[i] if i < len(perspectives) else "neutral",
             )
             for i, client in enumerate(llm_clients)
         ]
 
         self.mediator = MediatorAgent(llm_clients[0])
-        self.debate_history: List[List[AgentResponse]] = []
+        self.debate_history: list[list[AgentResponse]] = []
 
         logger.info(f"Initialized MultiAgentDebate with {len(self.agents)} agents, {num_rounds} rounds")
 
-    async def debate(self, problem: str) -> Dict[str, Any]:
+    async def debate(self, problem: str) -> dict[str, Any]:
         """
         Run multi-agent debate.
 
@@ -383,10 +338,7 @@ class MultiAgentDebate:
 
         # Round 1: Initial responses
         logger.info("Round 1: Initial responses")
-        initial_responses = await asyncio.gather(*[
-            agent.generate_initial_response(problem)
-            for agent in self.agents
-        ])
+        initial_responses = await asyncio.gather(*[agent.generate_initial_response(problem) for agent in self.agents])
         self.debate_history.append(initial_responses)
 
         # Subsequent rounds: Critique and refine
@@ -394,10 +346,9 @@ class MultiAgentDebate:
             logger.info(f"Round {round_num}: Critique and refine")
 
             # Each agent critiques others and refines their answer
-            round_responses = await asyncio.gather(*[
-                agent.generate_critique(problem, self.debate_history[-1], round_num)
-                for agent in self.agents
-            ])
+            round_responses = await asyncio.gather(
+                *[agent.generate_critique(problem, self.debate_history[-1], round_num) for agent in self.agents]
+            )
             self.debate_history.append(round_responses)
 
         # Mediation: Synthesize final answer
@@ -411,7 +362,7 @@ class MultiAgentDebate:
             "debate_history": self.debate_history,
             "synthesis": synthesis,
             "final_answer": synthesis.get("final_answer", ""),
-            "consensus_score": synthesis.get("consensus_score", 0.0)
+            "consensus_score": synthesis.get("consensus_score", 0.0),
         }
 
     def get_debate_summary(self) -> str:
@@ -424,7 +375,7 @@ class MultiAgentDebate:
         if not self.debate_history:
             return "No debate history"
 
-        summary = f"Multi-Agent Debate Summary\n"
+        summary = "Multi-Agent Debate Summary\n"
         summary += f"Agents: {len(self.agents)}, Rounds: {len(self.debate_history)}\n\n"
 
         for round_num, round_responses in enumerate(self.debate_history, 1):
@@ -443,7 +394,7 @@ class DebateEvaluator:
         """Initialize debate evaluator."""
         self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
-    def evaluate_debate(self, debate_result: Dict[str, Any]) -> Dict[str, float]:
+    def evaluate_debate(self, debate_result: dict[str, Any]) -> dict[str, float]:
         """
         Evaluate debate quality.
 
@@ -460,7 +411,7 @@ class DebateEvaluator:
                 "consensus_convergence": 0.0,
                 "argument_diversity": 0.0,
                 "refinement_quality": 0.0,
-                "overall_debate_score": 0.0
+                "overall_debate_score": 0.0,
             }
 
         # Consensus convergence: did agents converge over rounds?
@@ -472,21 +423,17 @@ class DebateEvaluator:
         # Refinement quality: did responses improve?
         refinement = self._measure_refinement(history)
 
-        overall_score = (
-            convergence * 0.4 +
-            diversity * 0.3 +
-            refinement * 0.3
-        )
+        overall_score = convergence * 0.4 + diversity * 0.3 + refinement * 0.3
 
         return {
             "consensus_convergence": float(convergence),
             "argument_diversity": float(diversity),
             "refinement_quality": float(refinement),
             "overall_debate_score": float(overall_score),
-            "consensus_score": debate_result.get("consensus_score", 0.0)
+            "consensus_score": debate_result.get("consensus_score", 0.0),
         }
 
-    def _measure_convergence(self, history: List[List[AgentResponse]]) -> float:
+    def _measure_convergence(self, history: list[list[AgentResponse]]) -> float:
         """Measure if agents converged over rounds."""
         if len(history) < 2:
             return 0.5
@@ -506,7 +453,7 @@ class DebateEvaluator:
         convergence = max(0, last_sim - first_sim) / (1 - first_sim + 0.01)
         return float(np.clip(convergence, 0.0, 1.0))
 
-    def _measure_diversity(self, responses: List[AgentResponse]) -> float:
+    def _measure_diversity(self, responses: list[AgentResponse]) -> float:
         """Measure diversity of perspectives."""
         if len(responses) < 2:
             return 0.5
@@ -518,7 +465,7 @@ class DebateEvaluator:
         diversity = 1 - avg_sim
         return float(np.clip(diversity, 0.0, 1.0))
 
-    def _measure_refinement(self, history: List[List[AgentResponse]]) -> float:
+    def _measure_refinement(self, history: list[list[AgentResponse]]) -> float:
         """Measure if responses got more sophisticated."""
         if len(history) < 2:
             return 0.5
@@ -541,10 +488,7 @@ class DebateEvaluator:
         similarities = []
         for i in range(len(embeddings)):
             for j in range(i + 1, len(embeddings)):
-                sim = cosine_similarity(
-                    embeddings[i].reshape(1, -1),
-                    embeddings[j].reshape(1, -1)
-                )[0][0]
+                sim = cosine_similarity(embeddings[i].reshape(1, -1), embeddings[j].reshape(1, -1))[0][0]
                 similarities.append(sim)
 
         return float(np.mean(similarities))

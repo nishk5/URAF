@@ -4,12 +4,12 @@ Mixture of Experts (MoE) Routing System
 Routes tasks to specialized expert models based on task classification.
 """
 
-import re
-from typing import Dict, Optional, Any, List
+from typing import Any
+
+import numpy as np
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 
 
 class ExpertRouter:
@@ -21,28 +21,24 @@ class ExpertRouter:
             "math": {
                 "models": ["deepseek-math-7b", "qwen2.5-math-7b"],
                 "keywords": ["calculate", "equation", "solve", "mathematical", "arithmetic", "algebra"],
-                "description": "Mathematical reasoning and problem solving"
+                "description": "Mathematical reasoning and problem solving",
             },
             "code": {
                 "models": ["codellama-34b", "deepseek-coder-33b"],
                 "keywords": ["code", "function", "programming", "algorithm", "debug", "implement"],
-                "description": "Code generation and debugging"
+                "description": "Code generation and debugging",
             },
             "reasoning": {
                 "models": ["qwen2.5-72b", "claude-3-opus", "gpt-4"],
                 "keywords": ["analyze", "reason", "logic", "deduce", "infer", "conclude"],
-                "description": "Complex reasoning and analysis"
+                "description": "Complex reasoning and analysis",
             },
             "creative": {
                 "models": ["claude-3-sonnet", "gpt-4-turbo"],
                 "keywords": ["creative", "story", "write", "compose", "generate", "imagine"],
-                "description": "Creative writing and content generation"
+                "description": "Creative writing and content generation",
             },
-            "general": {
-                "models": ["gpt-4", "claude-3-opus"],
-                "keywords": [],
-                "description": "General-purpose tasks"
-            }
+            "general": {"models": ["gpt-4", "claude-3-opus"], "keywords": [], "description": "General-purpose tasks"},
         }
 
         self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
@@ -66,10 +62,7 @@ class ExpertRouter:
             if expert_type == "general":
                 continue
 
-            keyword_matches = sum(
-                1 for keyword in expert_info["keywords"]
-                if keyword in task_lower
-            )
+            keyword_matches = sum(1 for keyword in expert_info["keywords"] if keyword in task_lower)
             matches[expert_type] = keyword_matches
 
         # Select expert with most keyword matches
@@ -81,7 +74,7 @@ class ExpertRouter:
         logger.info(f"Classified task as: {expert_type}")
         return expert_type
 
-    def route(self, task: str, available_models: Optional[List[str]] = None) -> str:
+    def route(self, task: str, available_models: list[str] | None = None) -> str:
         """
         Route task to best available expert model.
 
@@ -108,7 +101,7 @@ class ExpertRouter:
 
         return recommended
 
-    def get_expert_info(self, expert_type: str) -> Dict[str, Any]:
+    def get_expert_info(self, expert_type: str) -> dict[str, Any]:
         """Get information about an expert type."""
         return self.experts.get(expert_type, {})
 
@@ -121,11 +114,7 @@ class EnsembleAggregator:
         self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
         logger.info("Initialized EnsembleAggregator")
 
-    async def aggregate(
-        self,
-        responses: Dict[str, str],
-        method: str = "voting"
-    ) -> Dict[str, Any]:
+    async def aggregate(self, responses: dict[str, str], method: str = "voting") -> dict[str, Any]:
         """
         Aggregate multiple expert responses.
 
@@ -140,11 +129,7 @@ class EnsembleAggregator:
             return {"error": "No responses to aggregate"}
 
         if len(responses) == 1:
-            return {
-                "aggregated_response": list(responses.values())[0],
-                "method": "single",
-                "num_models": 1
-            }
+            return {"aggregated_response": list(responses.values())[0], "method": "single", "num_models": 1}
 
         if method == "voting":
             # Simple majority voting (for classification tasks)
@@ -157,20 +142,14 @@ class EnsembleAggregator:
             return self._semantic_aggregate(responses)
         else:
             # Default: concatenate
-            combined = "\n\n".join([
-                f"[{model}]: {response}"
-                for model, response in responses.items()
-            ])
-            return {
-                "aggregated_response": combined,
-                "method": "concatenation",
-                "num_models": len(responses)
-            }
+            combined = "\n\n".join([f"[{model}]: {response}" for model, response in responses.items()])
+            return {"aggregated_response": combined, "method": "concatenation", "num_models": len(responses)}
 
-    def _majority_vote(self, responses: Dict[str, str]) -> Dict[str, Any]:
+    def _majority_vote(self, responses: dict[str, str]) -> dict[str, Any]:
         """Simple majority voting."""
         # Count occurrences of each response
         from collections import Counter
+
         response_list = list(responses.values())
         counts = Counter(response_list)
         most_common = counts.most_common(1)[0]
@@ -179,15 +158,15 @@ class EnsembleAggregator:
             "aggregated_response": most_common[0],
             "method": "majority_vote",
             "votes": most_common[1],
-            "num_models": len(responses)
+            "num_models": len(responses),
         }
 
-    def _weighted_aggregate(self, responses: Dict[str, str]) -> Dict[str, Any]:
+    def _weighted_aggregate(self, responses: dict[str, str]) -> dict[str, Any]:
         """Weighted aggregation (placeholder)."""
         # In production, use model confidence scores
         return self._majority_vote(responses)
 
-    def _semantic_aggregate(self, responses: Dict[str, str]) -> Dict[str, Any]:
+    def _semantic_aggregate(self, responses: dict[str, str]) -> dict[str, Any]:
         """Aggregate based on semantic similarity."""
         response_texts = list(responses.values())
         embeddings = self.embedding_model.encode(response_texts)
@@ -201,5 +180,5 @@ class EnsembleAggregator:
             "aggregated_response": response_texts[most_central_idx],
             "method": "semantic_center",
             "centrality_score": float(avg_similarities[most_central_idx]),
-            "num_models": len(responses)
+            "num_models": len(responses),
         }

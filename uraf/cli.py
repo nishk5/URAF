@@ -1,8 +1,10 @@
 import argparse
 import asyncio
-from uraf.evaluate_agents import run_evaluation
+
 from uraf.benchmark_tracker import BenchmarkTracker
 from uraf.config_loader import Config
+from uraf.evaluate_agents import run_evaluation
+
 
 def main():
     parser = argparse.ArgumentParser(description="URAF Command-Line Interface")
@@ -25,13 +27,16 @@ def main():
     elif args.history:
         history = tracker.load_results()
         for record in history:
-            print(f"Model: {record['model']}, Agent: {record['agent_type']}, Score: {record['evaluation']['URAF Score']}")
+            print(
+                f"Model: {record['model']}, Agent: {record['agent_type']}, Score: {record['evaluation']['URAF Score']}"
+            )
     elif args.compare:
         print("Performance Summary:", tracker.compare_models())
     elif args.export:
         tracker.export_results()
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()

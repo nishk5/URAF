@@ -6,19 +6,20 @@ Based on "Constitutional AI: Harmlessness from AI Feedback" (Anthropic, 2022)
 """
 
 import re
-import asyncio
-from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
+from typing import Any
+
 from loguru import logger
 
 
 @dataclass
 class ConstitutionalPrinciple:
     """A principle for evaluating responses."""
+
     name: str
     question: str
     weight: float = 1.0
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class ConstitutionalEvaluator:
@@ -34,51 +35,47 @@ class ConstitutionalEvaluator:
             name="Factual Accuracy",
             question="Is this response factually accurate and well-supported by evidence?",
             weight=1.5,
-            description="Responses should be truthful and avoid misinformation"
+            description="Responses should be truthful and avoid misinformation",
         ),
         ConstitutionalPrinciple(
             name="Logical Consistency",
             question="Is the reasoning logically consistent without contradictions?",
             weight=1.2,
-            description="Arguments should follow valid logical structure"
+            description="Arguments should follow valid logical structure",
         ),
         ConstitutionalPrinciple(
             name="Transparency",
             question="Is the reasoning transparent and traceable?",
             weight=1.0,
-            description="Reasoning steps should be clear and explicit"
+            description="Reasoning steps should be clear and explicit",
         ),
         ConstitutionalPrinciple(
             name="Uncertainty Acknowledgment",
             question="Are uncertainties and limitations properly acknowledged?",
             weight=0.8,
-            description="Should acknowledge what is unknown or uncertain"
+            description="Should acknowledge what is unknown or uncertain",
         ),
         ConstitutionalPrinciple(
             name="Harmlessness",
             question="Does this response avoid potentially harmful stereotypes or biases?",
             weight=1.3,
-            description="Should not perpetuate harmful content"
+            description="Should not perpetuate harmful content",
         ),
         ConstitutionalPrinciple(
             name="Helpfulness",
             question="Does this response genuinely address the user's intent and needs?",
             weight=1.0,
-            description="Should be useful and relevant to the question"
+            description="Should be useful and relevant to the question",
         ),
         ConstitutionalPrinciple(
             name="Scope Appropriateness",
             question="Does the response stay within appropriate scope without overreaching?",
             weight=0.9,
-            description="Should not claim expertise beyond reasonable bounds"
-        )
+            description="Should not claim expertise beyond reasonable bounds",
+        ),
     ]
 
-    def __init__(
-        self,
-        llm_client=None,
-        principles: Optional[List[ConstitutionalPrinciple]] = None
-    ):
+    def __init__(self, llm_client=None, principles: list[ConstitutionalPrinciple] | None = None):
         """
         Initialize constitutional evaluator.
 
@@ -90,11 +87,7 @@ class ConstitutionalEvaluator:
         self.principles = principles or self.DEFAULT_PRINCIPLES
         logger.info(f"Initialized ConstitutionalEvaluator with {len(self.principles)} principles")
 
-    async def critique(
-        self,
-        response: str,
-        original_question: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def critique(self, response: str, original_question: str | None = None) -> dict[str, Any]:
         """
         Critique a response against constitutional principles.
 
@@ -112,17 +105,10 @@ class ConstitutionalEvaluator:
         for principle in self.principles:
             if self.llm_client:
                 # LLM-based critique
-                critique_result = await self._llm_critique(
-                    response,
-                    principle,
-                    original_question
-                )
+                critique_result = await self._llm_critique(response, principle, original_question)
             else:
                 # Rule-based critique
-                critique_result = self._rule_based_critique(
-                    response,
-                    principle
-                )
+                critique_result = self._rule_based_critique(response, principle)
 
             critiques.append(critique_result)
 
@@ -137,15 +123,12 @@ class ConstitutionalEvaluator:
             "overall_score": overall_score,
             "principle_scores": critiques,
             "num_violations": sum(1 for c in critiques if c["score"] < 0.5),
-            "num_principles": len(critiques)
+            "num_principles": len(critiques),
         }
 
     async def _llm_critique(
-        self,
-        response: str,
-        principle: ConstitutionalPrinciple,
-        original_question: Optional[str]
-    ) -> Dict[str, Any]:
+        self, response: str, principle: ConstitutionalPrinciple, original_question: str | None
+    ) -> dict[str, Any]:
         """
         Use LLM to critique response against principle.
 
@@ -157,11 +140,7 @@ class ConstitutionalEvaluator:
         Returns:
             Critique result
         """
-        critique_prompt = self._create_critique_prompt(
-            response,
-            principle,
-            original_question
-        )
+        critique_prompt = self._create_critique_prompt(response, principle, original_question)
 
         try:
             llm_response = await self.llm_client.query(critique_prompt)
@@ -171,11 +150,7 @@ class ConstitutionalEvaluator:
             score = self._parse_score(response_text)
 
             # Extract feedback
-            feedback_match = re.search(
-                r'Feedback:(.*?)(?:Score:|$)',
-                response_text,
-                re.IGNORECASE | re.DOTALL
-            )
+            feedback_match = re.search(r"Feedback:(.*?)(?:Score:|$)", response_text, re.IGNORECASE | re.DOTALL)
             feedback = feedback_match.group(1).strip() if feedback_match else response_text[:200]
 
             return {
@@ -183,7 +158,7 @@ class ConstitutionalEvaluator:
                 "score": score,
                 "weight": principle.weight,
                 "feedback": feedback,
-                "method": "llm"
+                "method": "llm",
             }
 
         except Exception as e:
@@ -191,11 +166,7 @@ class ConstitutionalEvaluator:
             # Fallback to rule-based
             return self._rule_based_critique(response, principle)
 
-    def _rule_based_critique(
-        self,
-        response: str,
-        principle: ConstitutionalPrinciple
-    ) -> Dict[str, Any]:
+    def _rule_based_critique(self, response: str, principle: ConstitutionalPrinciple) -> dict[str, Any]:
         """
         Rule-based critique (fallback when no LLM available).
 
@@ -212,27 +183,27 @@ class ConstitutionalEvaluator:
         # Principle-specific rules
         if principle.name == "Factual Accuracy":
             # Check for hedging/uncertainty markers (good for factual accuracy)
-            if re.search(r'\b(according to|research shows|studies indicate)\b', response, re.IGNORECASE):
+            if re.search(r"\b(according to|research shows|studies indicate)\b", response, re.IGNORECASE):
                 score += 0.2
                 feedback = "Uses evidence-based language"
 
         elif principle.name == "Logical Consistency":
             # Check for logical connectives
-            if re.search(r'\b(therefore|thus|consequently|because)\b', response, re.IGNORECASE):
+            if re.search(r"\b(therefore|thus|consequently|because)\b", response, re.IGNORECASE):
                 score += 0.2
                 feedback = "Contains logical reasoning markers"
 
         elif principle.name == "Transparency":
             # Check for reasoning explanations
-            if re.search(r'\b(reason|because|explanation|step)\b', response, re.IGNORECASE):
+            if re.search(r"\b(reason|because|explanation|step)\b", response, re.IGNORECASE):
                 score += 0.2
                 feedback = "Provides reasoning explanation"
 
         elif principle.name == "Uncertainty Acknowledgment":
             # Check for uncertainty markers
             uncertainty_patterns = [
-                r'\b(uncertain|unclear|might|may|possibly|probably)\b',
-                r'\b(not sure|cannot say for certain|limited information)\b'
+                r"\b(uncertain|unclear|might|may|possibly|probably)\b",
+                r"\b(not sure|cannot say for certain|limited information)\b",
             ]
             if any(re.search(p, response, re.IGNORECASE) for p in uncertainty_patterns):
                 score += 0.2
@@ -241,7 +212,7 @@ class ConstitutionalEvaluator:
         elif principle.name == "Harmlessness":
             # Check for problematic language (simplified)
             harmful_patterns = [
-                r'\b(always|never)\b.*\b(women|men|people)\b',  # Overgeneralization
+                r"\b(always|never)\b.*\b(women|men|people)\b",  # Overgeneralization
             ]
             if any(re.search(p, response, re.IGNORECASE) for p in harmful_patterns):
                 score -= 0.2
@@ -254,13 +225,13 @@ class ConstitutionalEvaluator:
             # Check response length and structure (longer = more detailed)
             if len(response) > 200:
                 score += 0.1
-            if len(response.split('\n')) > 3:  # Multiple paragraphs
+            if len(response.split("\n")) > 3:  # Multiple paragraphs
                 score += 0.1
                 feedback = "Provides detailed response"
 
         elif principle.name == "Scope Appropriateness":
             # Check for overconfident claims
-            overconfident = re.search(r'\b(definitely|certainly|absolutely|guaranteed)\b', response, re.IGNORECASE)
+            overconfident = re.search(r"\b(definitely|certainly|absolutely|guaranteed)\b", response, re.IGNORECASE)
             if overconfident:
                 score -= 0.1
                 feedback = "May be overconfident"
@@ -276,14 +247,11 @@ class ConstitutionalEvaluator:
             "score": score,
             "weight": principle.weight,
             "feedback": feedback or "Rule-based evaluation",
-            "method": "rule-based"
+            "method": "rule-based",
         }
 
     def _create_critique_prompt(
-        self,
-        response: str,
-        principle: ConstitutionalPrinciple,
-        original_question: Optional[str]
+        self, response: str, principle: ConstitutionalPrinciple, original_question: str | None
     ) -> str:
         """Create prompt for LLM-based critique."""
         context = f"\nOriginal Question: {original_question}\n" if original_question else ""
@@ -313,7 +281,7 @@ Your evaluation:"""
     def _parse_score(self, text: str) -> float:
         """Parse score from LLM response."""
         # Look for "Score: X" pattern
-        score_match = re.search(r'Score:\s*(\d+(?:\.\d+)?)', text, re.IGNORECASE)
+        score_match = re.search(r"Score:\s*(\d+(?:\.\d+)?)", text, re.IGNORECASE)
 
         if score_match:
             raw_score = float(score_match.group(1))
@@ -324,7 +292,7 @@ Your evaluation:"""
                 return min(1.0, raw_score / 100)
 
         # Fallback: look for any number
-        number_match = re.search(r'(\d+(?:\.\d+)?)', text)
+        number_match = re.search(r"(\d+(?:\.\d+)?)", text)
         if number_match:
             raw_score = float(number_match.group(1))
             if raw_score <= 1:
@@ -338,11 +306,8 @@ Your evaluation:"""
         return 0.5
 
     async def self_improve(
-        self,
-        response: str,
-        original_question: str,
-        critique_result: Optional[Dict] = None
-    ) -> Dict[str, Any]:
+        self, response: str, original_question: str, critique_result: dict | None = None
+    ) -> dict[str, Any]:
         """
         Generate improved response based on critique.
 
@@ -356,20 +321,14 @@ Your evaluation:"""
         """
         if not self.llm_client:
             logger.warning("Cannot self-improve without LLM client")
-            return {
-                "success": False,
-                "error": "No LLM client available"
-            }
+            return {"success": False, "error": "No LLM client available"}
 
         # Get critique if not provided
         if critique_result is None:
             critique_result = await self.critique(response, original_question)
 
         # Identify weakest principles
-        weak_principles = [
-            c for c in critique_result["principle_scores"]
-            if c["score"] < 0.6
-        ]
+        weak_principles = [c for c in critique_result["principle_scores"] if c["score"] < 0.6]
 
         if not weak_principles:
             logger.info("Response already meets all principles")
@@ -377,15 +336,11 @@ Your evaluation:"""
                 "success": True,
                 "improved_response": response,
                 "improvement_needed": False,
-                "original_score": critique_result["overall_score"]
+                "original_score": critique_result["overall_score"],
             }
 
         # Create improvement prompt
-        improvement_prompt = self._create_improvement_prompt(
-            original_question,
-            response,
-            weak_principles
-        )
+        improvement_prompt = self._create_improvement_prompt(original_question, response, weak_principles)
 
         try:
             improved = await self.llm_client.query(improvement_prompt)
@@ -396,7 +351,9 @@ Your evaluation:"""
 
             improvement = new_critique["overall_score"] - critique_result["overall_score"]
 
-            logger.info(f"Self-improvement: {critique_result['overall_score']:.3f} -> {new_critique['overall_score']:.3f}")
+            logger.info(
+                f"Self-improvement: {critique_result['overall_score']:.3f} -> {new_critique['overall_score']:.3f}"
+            )
 
             return {
                 "success": True,
@@ -405,27 +362,16 @@ Your evaluation:"""
                 "original_score": critique_result["overall_score"],
                 "improved_score": new_critique["overall_score"],
                 "improvement": improvement,
-                "weak_principles_addressed": [p["principle"] for p in weak_principles]
+                "weak_principles_addressed": [p["principle"] for p in weak_principles],
             }
 
         except Exception as e:
             logger.error(f"Self-improvement failed: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
-    def _create_improvement_prompt(
-        self,
-        question: str,
-        response: str,
-        weak_principles: List[Dict]
-    ) -> str:
+    def _create_improvement_prompt(self, question: str, response: str, weak_principles: list[dict]) -> str:
         """Create prompt for self-improvement."""
-        principles_text = "\n".join([
-            f"- {p['principle']}: {p['feedback']}"
-            for p in weak_principles
-        ])
+        principles_text = "\n".join([f"- {p['principle']}: {p['feedback']}" for p in weak_principles])
 
         return f"""You are tasked with improving a response based on constitutional principles.
 
@@ -469,15 +415,10 @@ class RLAIFEvaluator:
             constitutional_evaluator: Constitutional evaluator for feedback
         """
         self.constitutional_evaluator = constitutional_evaluator
-        self.feedback_history: List[Dict] = []
+        self.feedback_history: list[dict] = []
         logger.info("Initialized RLAIFEvaluator")
 
-    async def generate_preference_pair(
-        self,
-        question: str,
-        response_a: str,
-        response_b: str
-    ) -> Dict[str, Any]:
+    async def generate_preference_pair(self, question: str, response_a: str, response_b: str) -> dict[str, Any]:
         """
         Compare two responses and determine preference.
 
@@ -512,19 +453,14 @@ class RLAIFEvaluator:
             "critique_b": critique_b,
             "preferred": preferred,
             "feedback": feedback,
-            "score_difference": abs(critique_a["overall_score"] - critique_b["overall_score"])
+            "score_difference": abs(critique_a["overall_score"] - critique_b["overall_score"]),
         }
 
         self.feedback_history.append(result)
 
         return result
 
-    def _generate_feedback(
-        self,
-        critique_a: Dict,
-        critique_b: Dict,
-        preferred: str
-    ) -> str:
+    def _generate_feedback(self, critique_a: dict, critique_b: dict, preferred: str) -> str:
         """Generate natural language feedback explaining preference."""
         if preferred == "Tie":
             return f"Both responses score similarly (A: {critique_a['overall_score']:.2f}, B: {critique_b['overall_score']:.2f})"
@@ -535,13 +471,15 @@ class RLAIFEvaluator:
         feedback = f"Response {preferred} is preferred (score: {better['overall_score']:.2f} vs {worse['overall_score']:.2f}). "
 
         # Identify key differences
-        better_principles = [p for p in better['principle_scores'] if p['score'] > 0.7]
-        worse_principles = [p for p in worse['principle_scores'] if p['score'] < 0.5]
+        better_principles = [p for p in better["principle_scores"] if p["score"] > 0.7]
+        worse_principles = [p for p in worse["principle_scores"] if p["score"] < 0.5]
 
         if better_principles:
             feedback += f"It excels in: {', '.join([p['principle'] for p in better_principles[:2]])}. "
 
         if worse_principles:
-            feedback += f"The other response struggles with: {', '.join([p['principle'] for p in worse_principles[:2]])}."
+            feedback += (
+                f"The other response struggles with: {', '.join([p['principle'] for p in worse_principles[:2]])}."
+            )
 
         return feedback

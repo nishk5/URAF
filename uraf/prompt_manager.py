@@ -1,5 +1,5 @@
 import guidance
-from loguru import logger
+
 
 class PromptManager:
     """
@@ -8,7 +8,7 @@ class PromptManager:
 
     @staticmethod
     def base_template(task):
-        return guidance('''
+        return guidance("""
         {{#system}}
         You are an advanced reasoning system employing multiple cognitive frameworks.
         Ensure that responses follow strict reasoning formats.
@@ -23,11 +23,11 @@ class PromptManager:
         *Illustrative Example:* {{gen 'illustrative_example' max_tokens=200}}
         *Final Synthesis:* {{gen 'final_synthesis' max_tokens=250}}
         {{/assistant}}
-        ''')(task=task)
+        """)(task=task)
 
     @staticmethod
     def tree_of_thoughts(task):
-        return guidance('''
+        return guidance("""
         {{#system}}
         Apply Tree of Thoughts reasoning:
         1. Decompose the problem into components
@@ -63,11 +63,11 @@ class PromptManager:
 
         *Final Synthesis:* {{gen 'final_synthesis' max_tokens=200}}
         {{/assistant}}
-        ''')(task=task)
+        """)(task=task)
 
     @staticmethod
     def self_consistency(task):
-        return guidance('''
+        return guidance("""
         {{#system}}
         Apply Self-Consistency reasoning:
         1. Generate multiple independent solutions
@@ -93,11 +93,11 @@ class PromptManager:
 
         *Final Synthesis:* {{gen 'final_synthesis' max_tokens=200}}
         {{/assistant}}
-        ''')(task=task)
+        """)(task=task)
 
     @staticmethod
     def self_critique(task):
-        return guidance('''
+        return guidance("""
         {{#system}}
         Apply Self-Critique reasoning:
         1. Generate initial response
@@ -123,7 +123,7 @@ class PromptManager:
 
         *Final Synthesis:* {{gen 'final_synthesis' max_tokens=200}}
         {{/assistant}}
-        ''')(task=task)
+        """)(task=task)
 
     @staticmethod
     def get_structured_prompt(task, technique=None):
@@ -144,9 +144,5 @@ class PromptManager:
         """
         Validates that the response follows the required structure.
         """
-        required_sections = [
-            "*Understanding:*",
-            "*Reasoning Pathway:*",
-            "*Final Synthesis:*"
-        ]
+        required_sections = ["*Understanding:*", "*Reasoning Pathway:*", "*Final Synthesis:*"]
         return all(section in response for section in required_sections)

@@ -5,12 +5,12 @@ Provides rigorous statistical evaluation for benchmark comparisons.
 Includes hypothesis testing, confidence intervals, and effect sizes.
 """
 
+from typing import Any
+
 import numpy as np
-from typing import List, Dict, Tuple, Optional, Any
+from loguru import logger
 from scipy import stats
 from scipy.stats import bootstrap
-from loguru import logger
-import json
 
 
 class BenchmarkStatistics:
@@ -28,11 +28,8 @@ class BenchmarkStatistics:
         logger.info(f"Initialized BenchmarkStatistics (confidence={self.confidence_level:.0%})")
 
     def bootstrap_confidence_interval(
-        self,
-        scores: List[float],
-        n_resamples: int = 10000,
-        confidence: Optional[float] = None
-    ) -> Dict[str, float]:
+        self, scores: list[float], n_resamples: int = 10000, confidence: float | None = None
+    ) -> dict[str, float]:
         """
         Calculate bootstrap confidence interval for scores.
 
@@ -45,12 +42,7 @@ class BenchmarkStatistics:
             Statistics with confidence intervals
         """
         if not scores:
-            return {
-                "mean": 0.0,
-                "ci_lower": 0.0,
-                "ci_upper": 0.0,
-                "error": "No scores provided"
-            }
+            return {"mean": 0.0, "ci_lower": 0.0, "ci_upper": 0.0, "error": "No scores provided"}
 
         scores_array = np.array(scores)
         confidence = confidence or self.confidence_level
@@ -72,7 +64,7 @@ class BenchmarkStatistics:
                 n_resamples=n_resamples,
                 confidence_level=confidence,
                 random_state=rng,
-                method='percentile'
+                method="percentile",
             )
 
             ci_lower, ci_upper = result.confidence_interval
@@ -86,7 +78,7 @@ class BenchmarkStatistics:
                 "ci_upper": float(ci_upper),
                 "confidence_level": confidence,
                 "n_samples": len(scores),
-                "margin_of_error": float((ci_upper - ci_lower) / 2)
+                "margin_of_error": float((ci_upper - ci_lower) / 2),
             }
 
         except Exception as e:
@@ -103,14 +95,10 @@ class BenchmarkStatistics:
                 "confidence_level": confidence,
                 "n_samples": len(scores),
                 "margin_of_error": float(ci),
-                "method": "t-distribution (fallback)"
+                "method": "t-distribution (fallback)",
             }
 
-    def paired_t_test(
-        self,
-        scores_a: List[float],
-        scores_b: List[float]
-    ) -> Dict[str, Any]:
+    def paired_t_test(self, scores_a: list[float], scores_b: list[float]) -> dict[str, Any]:
         """
         Perform paired t-test to compare two models.
 
@@ -125,16 +113,10 @@ class BenchmarkStatistics:
         """
         if len(scores_a) != len(scores_b):
             logger.error("Score lists must have same length for paired t-test")
-            return {
-                "error": "Mismatched lengths",
-                "valid": False
-            }
+            return {"error": "Mismatched lengths", "valid": False}
 
         if not scores_a or not scores_b:
-            return {
-                "error": "Empty score lists",
-                "valid": False
-            }
+            return {"error": "Empty score lists", "valid": False}
 
         scores_a = np.array(scores_a)
         scores_b = np.array(scores_b)
@@ -168,15 +150,12 @@ class BenchmarkStatistics:
             "mean_difference": float(mean_a - mean_b),
             "winner": winner if is_significant else "Tie",
             "interpretation": interpretation,
-            "n_pairs": len(scores_a)
+            "n_pairs": len(scores_a),
         }
 
     def independent_t_test(
-        self,
-        scores_a: List[float],
-        scores_b: List[float],
-        equal_var: bool = True
-    ) -> Dict[str, Any]:
+        self, scores_a: list[float], scores_b: list[float], equal_var: bool = True
+    ) -> dict[str, Any]:
         """
         Perform independent samples t-test.
 
@@ -191,10 +170,7 @@ class BenchmarkStatistics:
             Test results
         """
         if not scores_a or not scores_b:
-            return {
-                "error": "Empty score lists",
-                "valid": False
-            }
+            return {"error": "Empty score lists", "valid": False}
 
         scores_a = np.array(scores_a)
         scores_b = np.array(scores_b)
@@ -228,14 +204,10 @@ class BenchmarkStatistics:
             "winner": winner if is_significant else "Tie",
             "interpretation": interpretation,
             "n_a": len(scores_a),
-            "n_b": len(scores_b)
+            "n_b": len(scores_b),
         }
 
-    def cohens_d(
-        self,
-        scores_a: List[float],
-        scores_b: List[float]
-    ) -> Dict[str, Any]:
+    def cohens_d(self, scores_a: list[float], scores_b: list[float]) -> dict[str, Any]:
         """
         Calculate Cohen's d effect size.
 
@@ -255,10 +227,7 @@ class BenchmarkStatistics:
             Effect size metrics
         """
         if not scores_a or not scores_b:
-            return {
-                "error": "Empty score lists",
-                "valid": False
-            }
+            return {"error": "Empty score lists", "valid": False}
 
         scores_a = np.array(scores_a)
         scores_b = np.array(scores_b)
@@ -295,13 +264,10 @@ class BenchmarkStatistics:
             "magnitude": magnitude,
             "interpretation": f"{magnitude.capitalize()} effect size (d={d:.3f})",
             "mean_difference": float(mean_a - mean_b),
-            "pooled_std": float(pooled_std)
+            "pooled_std": float(pooled_std),
         }
 
-    def anova(
-        self,
-        model_scores: Dict[str, List[float]]
-    ) -> Dict[str, Any]:
+    def anova(self, model_scores: dict[str, list[float]]) -> dict[str, Any]:
         """
         Perform one-way ANOVA to compare multiple models.
 
@@ -314,10 +280,7 @@ class BenchmarkStatistics:
             ANOVA results
         """
         if len(model_scores) < 2:
-            return {
-                "error": "Need at least 2 models for ANOVA",
-                "valid": False
-            }
+            return {"error": "Need at least 2 models for ANOVA", "valid": False}
 
         # Extract scores
         score_lists = [np.array(scores) for scores in model_scores.values()]
@@ -329,10 +292,7 @@ class BenchmarkStatistics:
         is_significant = p_value < self.alpha
 
         # Calculate group means
-        group_means = {
-            name: float(np.mean(scores))
-            for name, scores in model_scores.items()
-        }
+        group_means = {name: float(np.mean(scores)) for name, scores in model_scores.items()}
 
         if is_significant:
             interpretation = f"Significant differences detected among models (p={p_value:.4f})"
@@ -349,14 +309,10 @@ class BenchmarkStatistics:
             "is_significant": is_significant,
             "num_models": len(model_scores),
             "group_means": group_means,
-            "interpretation": interpretation
+            "interpretation": interpretation,
         }
 
-    def multiple_comparisons(
-        self,
-        model_scores: Dict[str, List[float]],
-        method: str = "bonferroni"
-    ) -> Dict[str, Any]:
+    def multiple_comparisons(self, model_scores: dict[str, list[float]], method: str = "bonferroni") -> dict[str, Any]:
         """
         Perform pairwise comparisons with multiple comparison correction.
 
@@ -371,10 +327,7 @@ class BenchmarkStatistics:
         n_comparisons = len(model_names) * (len(model_names) - 1) // 2
 
         if n_comparisons == 0:
-            return {
-                "error": "Need at least 2 models",
-                "valid": False
-            }
+            return {"error": "Need at least 2 models", "valid": False}
 
         # Adjust alpha for multiple comparisons
         if method == "bonferroni":
@@ -390,20 +343,22 @@ class BenchmarkStatistics:
         p_values = []
 
         for i, name_a in enumerate(model_names):
-            for name_b in model_names[i+1:]:
+            for name_b in model_names[i + 1 :]:
                 scores_a = model_scores[name_a]
                 scores_b = model_scores[name_b]
 
                 # Perform t-test
                 result = self.independent_t_test(scores_a, scores_b)
 
-                comparisons.append({
-                    "model_a": name_a,
-                    "model_b": name_b,
-                    "p_value": result["p_value"],
-                    "mean_difference": result["mean_difference"],
-                    "winner": result["winner"]
-                })
+                comparisons.append(
+                    {
+                        "model_a": name_a,
+                        "model_b": name_b,
+                        "p_value": result["p_value"],
+                        "mean_difference": result["mean_difference"],
+                        "winner": result["winner"],
+                    }
+                )
                 p_values.append(result["p_value"])
 
         # Apply correction
@@ -427,18 +382,11 @@ class BenchmarkStatistics:
             "adjusted_alpha": adjusted_alpha if method == "bonferroni" else "variable (Holm)",
             "comparisons": comparisons,
             "significant_pairs": [
-                f"{c['model_a']} vs {c['model_b']}"
-                for c in comparisons
-                if c.get("is_significant", False)
-            ]
+                f"{c['model_a']} vs {c['model_b']}" for c in comparisons if c.get("is_significant", False)
+            ],
         }
 
-    def power_analysis(
-        self,
-        effect_size: float,
-        n_samples: int,
-        alpha: Optional[float] = None
-    ) -> Dict[str, Any]:
+    def power_analysis(self, effect_size: float, n_samples: int, alpha: float | None = None) -> dict[str, Any]:
         """
         Calculate statistical power for a given effect size and sample size.
 
@@ -483,15 +431,12 @@ class BenchmarkStatistics:
             "effect_size": effect_size,
             "n_samples": n_samples,
             "alpha": alpha,
-            "interpretation": interpretation
+            "interpretation": interpretation,
         }
 
     def sample_size_calculation(
-        self,
-        effect_size: float,
-        desired_power: float = 0.8,
-        alpha: Optional[float] = None
-    ) -> Dict[str, Any]:
+        self, effect_size: float, desired_power: float = 0.8, alpha: float | None = None
+    ) -> dict[str, Any]:
         """
         Calculate required sample size for desired power.
 
@@ -523,7 +468,7 @@ class BenchmarkStatistics:
             "effect_size": effect_size,
             "desired_power": desired_power,
             "alpha": alpha,
-            "interpretation": f"Need {n_per_group} samples per group to detect effect size {effect_size} with {desired_power:.0%} power"
+            "interpretation": f"Need {n_per_group} samples per group to detect effect size {effect_size} with {desired_power:.0%} power",
         }
 
 
@@ -535,11 +480,8 @@ class PerformanceRegression:
         logger.info("Initialized PerformanceRegression")
 
     def detect_regression(
-        self,
-        historical_scores: List[float],
-        current_score: float,
-        threshold: float = -0.05
-    ) -> Dict[str, Any]:
+        self, historical_scores: list[float], current_score: float, threshold: float = -0.05
+    ) -> dict[str, Any]:
         """
         Detect if current performance is a regression.
 
@@ -552,11 +494,7 @@ class PerformanceRegression:
             Regression detection result
         """
         if not historical_scores:
-            return {
-                "is_regression": False,
-                "reason": "No historical data",
-                "valid": False
-            }
+            return {"is_regression": False, "reason": "No historical data", "valid": False}
 
         historical_array = np.array(historical_scores)
         historical_mean = np.mean(historical_array)
@@ -586,5 +524,5 @@ class PerformanceRegression:
             "historical_std": float(historical_std),
             "z_score": float(z_score),
             "relative_change": float(relative_change),
-            "interpretation": interpretation
+            "interpretation": interpretation,
         }

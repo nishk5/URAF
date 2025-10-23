@@ -5,11 +5,11 @@ Provides explanations for agent decisions and reasoning chains.
 """
 
 import re
-from typing import List, Dict, Optional, Any
+from typing import Any
+
+from loguru import logger
 from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
-import numpy as np
-from loguru import logger
 
 
 class ExplainabilityModule:
@@ -18,15 +18,12 @@ class ExplainabilityModule:
     def __init__(self):
         """Initialize explainability module."""
         self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-        self.tfidf = TfidfVectorizer(max_features=20, stop_words='english')
+        self.tfidf = TfidfVectorizer(max_features=20, stop_words="english")
         logger.info("Initialized ExplainabilityModule")
 
     def generate_explanation(
-        self,
-        decision: str,
-        reasoning_chain: List[str],
-        context: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, decision: str, reasoning_chain: list[str], context: str | None = None
+    ) -> dict[str, Any]:
         """
         Generate explanation for a decision.
 
@@ -53,25 +50,21 @@ class ExplainabilityModule:
 
         return explanation
 
-    def _extract_key_factors(self, reasoning_chain: List[str]) -> List[str]:
+    def _extract_key_factors(self, reasoning_chain: list[str]) -> list[str]:
         """Extract key factors from reasoning."""
         key_factors = []
 
         for step in reasoning_chain:
             # Look for causal language
-            if re.search(r'\b(because|since|due to|therefore|thus)\b', step, re.IGNORECASE):
+            if re.search(r"\b(because|since|due to|therefore|thus)\b", step, re.IGNORECASE):
                 # Extract the clause after causal marker
-                causal_match = re.search(
-                    r'\b(?:because|since|due to)\s+([^.]+)',
-                    step,
-                    re.IGNORECASE
-                )
+                causal_match = re.search(r"\b(?:because|since|due to)\s+([^.]+)", step, re.IGNORECASE)
                 if causal_match:
                     key_factors.append(causal_match.group(1).strip())
 
         return key_factors[:5]  # Top 5
 
-    def _summarize_reasoning(self, reasoning_chain: List[str]) -> List[str]:
+    def _summarize_reasoning(self, reasoning_chain: list[str]) -> list[str]:
         """Summarize reasoning steps."""
         if not reasoning_chain:
             return []
@@ -79,22 +72,23 @@ class ExplainabilityModule:
         # Simple summarization: first sentence of each step
         summaries = []
         for step in reasoning_chain:
-            first_sentence = step.split('.')[0].strip()
+            first_sentence = step.split(".")[0].strip()
             if first_sentence:
                 summaries.append(first_sentence)
 
         return summaries
 
-    def _identify_confidence_markers(self, text: str) -> Dict[str, Any]:
+    def _identify_confidence_markers(self, text: str) -> dict[str, Any]:
         """Identify confidence markers in text."""
-        high_confidence = [
-            r'\bclearly\b', r'\bobviously\b', r'\bcertainly\b',
-            r'\bdefinitely\b', r'\bundoubtedly\b'
-        ]
+        high_confidence = [r"\bclearly\b", r"\bobviously\b", r"\bcertainly\b", r"\bdefinitely\b", r"\bundoubtedly\b"]
 
         low_confidence = [
-            r'\bmaybe\b', r'\bmight\b', r'\bpossibly\b',
-            r'\bperhaps\b', r'\buncertain\b', r'\bcould be\b'
+            r"\bmaybe\b",
+            r"\bmight\b",
+            r"\bpossibly\b",
+            r"\bperhaps\b",
+            r"\buncertain\b",
+            r"\bcould be\b",
         ]
 
         high_count = sum(1 for pattern in high_confidence if re.search(pattern, text, re.IGNORECASE))
@@ -107,13 +101,9 @@ class ExplainabilityModule:
         else:
             confidence_level = "medium"
 
-        return {
-            "level": confidence_level,
-            "high_confidence_markers": high_count,
-            "low_confidence_markers": low_count
-        }
+        return {"level": confidence_level, "high_confidence_markers": high_count, "low_confidence_markers": low_count}
 
-    def _extract_important_terms(self, reasoning_chain: List[str]) -> List[str]:
+    def _extract_important_terms(self, reasoning_chain: list[str]) -> list[str]:
         """Extract important terms using TF-IDF."""
         if not reasoning_chain:
             return []
@@ -140,16 +130,14 @@ class ExplainabilityModule:
         context_embedding = self.embedding_model.encode([context])
 
         from sklearn.metrics.pairwise import cosine_similarity
+
         relevance = cosine_similarity(decision_embedding, context_embedding)[0][0]
 
         return float(relevance)
 
     def generate_counterfactual(
-        self,
-        original_decision: str,
-        reasoning_chain: List[str],
-        factor_to_change: str
-    ) -> Dict[str, str]:
+        self, original_decision: str, reasoning_chain: list[str], factor_to_change: str
+    ) -> dict[str, str]:
         """
         Generate counterfactual explanation.
 
@@ -164,18 +152,13 @@ class ExplainabilityModule:
         counterfactual = {
             "original_decision": original_decision,
             "changed_factor": factor_to_change,
-            "counterfactual_explanation": f"If {factor_to_change} were different, the decision might change because..."
+            "counterfactual_explanation": f"If {factor_to_change} were different, the decision might change because...",
         }
 
         # In production, use LLM to generate actual counterfactual
         return counterfactual
 
-    def explain_comparison(
-        self,
-        decision_a: str,
-        decision_b: str,
-        context: str
-    ) -> Dict[str, Any]:
+    def explain_comparison(self, decision_a: str, decision_b: str, context: str) -> dict[str, Any]:
         """
         Explain why two decisions differ.
 
@@ -200,7 +183,7 @@ class ExplainabilityModule:
             "unique_to_decision_b": list(unique_to_b)[:10],
             "shared_concepts": list(shared)[:10],
             "divergence_score": len(unique_to_a) + len(unique_to_b),
-            "explanation": f"Decisions differ primarily in: {', '.join(list(unique_to_a | unique_to_b)[:5])}"
+            "explanation": f"Decisions differ primarily in: {', '.join(list(unique_to_a | unique_to_b)[:5])}",
         }
 
 
@@ -211,11 +194,7 @@ class AttentionVisualizer:
         """Initialize attention visualizer."""
         logger.info("Initialized AttentionVisualizer")
 
-    def visualize_step_importance(
-        self,
-        reasoning_steps: List[str],
-        final_decision: str
-    ) -> Dict[str, Any]:
+    def visualize_step_importance(self, reasoning_steps: list[str], final_decision: str) -> dict[str, Any]:
         """
         Calculate importance of each reasoning step to final decision.
 
@@ -236,6 +215,7 @@ class AttentionVisualizer:
         step_embeddings = model.encode(reasoning_steps)
 
         from sklearn.metrics.pairwise import cosine_similarity
+
         similarities = cosine_similarity(step_embeddings, decision_embedding).flatten()
 
         # Normalize to 0-1
@@ -245,11 +225,7 @@ class AttentionVisualizer:
             normalized = similarities
 
         step_importance = [
-            {
-                "step_index": i,
-                "step_text": step[:100],
-                "importance": float(score)
-            }
+            {"step_index": i, "step_text": step[:100], "importance": float(score)}
             for i, (step, score) in enumerate(zip(reasoning_steps, normalized))
         ]
 
@@ -258,5 +234,5 @@ class AttentionVisualizer:
 
         return {
             "step_importance": step_importance,
-            "most_important_step": step_importance[0] if step_importance else None
+            "most_important_step": step_importance[0] if step_importance else None,
         }
