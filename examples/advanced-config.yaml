@@ -1,0 +1,165 @@
+# Advanced URAF Configuration
+# Includes all cutting-edge features
+
+llm:
+  model: "qwen2.5-7b-instruct-1m"
+  api_url: "http://localhost:1234/v1/completions"
+  max_tokens: 4000
+  temperature: 0.5
+  top_p: 0.85
+  top_k: 50
+  min_p: 0.2
+  presence_penalty: 1.0
+
+# Process Reward Model Settings
+prm:
+  enabled: true
+  embedding_model: "all-MiniLM-L6-v2"
+  weights:
+    step_correctness: 0.40
+    consistency: 0.35
+    progress: 0.15
+    self_correction_bonus: 0.10
+
+# Tool Use Settings
+tools:
+  enabled: true
+  available_tools:
+    - calculator
+    - web_search
+    - code_executor
+    - wikipedia_search
+  react:
+    max_iterations: 10
+    timeout: 300  # seconds
+
+# Memory System Settings
+memory:
+  enabled: true
+  persist_directory: "data/agent_memory"
+  vector_db: "chromadb"
+  embedding_model: "all-MiniLM-L6-v2"
+  episodic_memory:
+    enabled: true
+    max_cache_size: 50
+  semantic_memory:
+    enabled: true
+    consolidation_interval_hours: 24
+  working_memory:
+    enabled: true
+    max_size: 10
+
+# Multi-Agent Debate Settings
+multi_agent_debate:
+  enabled: true
+  num_agents: 3
+  num_rounds: 3
+  perspectives:
+    - optimistic
+    - critical
+    - creative
+  consensus_threshold: 0.75
+
+# Constitutional AI Settings
+constitutional_ai:
+  enabled: true
+  principles:
+    - name: "Factual Accuracy"
+      weight: 1.5
+    - name: "Logical Consistency"
+      weight: 1.2
+    - name: "Transparency"
+      weight: 1.0
+    - name: "Uncertainty Acknowledgment"
+      weight: 0.8
+    - name: "Harmlessness"
+      weight: 1.3
+    - name: "Helpfulness"
+      weight: 1.0
+  self_improvement:
+    enabled: true
+    improvement_threshold: 0.6
+
+# Statistical Analysis Settings
+statistics:
+  enabled: true
+  confidence_level: 0.95  # 95% confidence intervals
+  significance_level: 0.05  # alpha = 0.05
+  bootstrap_resamples: 10000
+  multiple_comparison_method: "bonferroni"  # or "holm", "none"
+
+# Streaming Settings
+streaming:
+  enabled: true
+  chunk_size: 50  # tokens per chunk
+  real_time_evaluation: true
+  evaluation_interval: 50  # evaluate every N tokens
+
+# Mixture of Experts Settings
+moe:
+  enabled: true
+  routing_method: "keyword"  # or "semantic", "hybrid"
+  experts:
+    math:
+      - "deepseek-math-7b"
+      - "qwen2.5-math-7b"
+    code:
+      - "codellama-34b"
+      - "deepseek-coder-33b"
+    reasoning:
+      - "qwen2.5-72b"
+      - "gpt-4"
+    creative:
+      - "claude-3-sonnet"
+      - "gpt-4-turbo"
+  ensemble:
+    enabled: true
+    aggregation_method: "semantic"  # or "voting", "weighted"
+
+# Adversarial Testing Settings
+adversarial:
+  enabled: true
+  num_test_variations: 5
+  test_categories:
+    - ambiguous
+    - contradictory
+    - out_of_distribution
+    - edge_case
+  jailbreak_testing:
+    enabled: true
+  robustness_threshold: 0.7
+
+# Explainability Settings
+explainability:
+  enabled: true
+  generate_counterfactuals: true
+  attention_visualization: true
+  feature_importance: true
+  confidence_analysis: true
+
+# Evaluation Thresholds
+evaluation:
+  readiness_thresholds:
+    Multi-Step Critical Thinking Agent: 7.5
+    Backtracking & Self-Correcting Agent: 7.0
+    Multi-Perspective Analysis Agent: 8.0
+    Decision-Making Agent: 7.5
+    Autonomous Planning Agent: 8.5
+    Tool-Using Reasoning Agent: 7.0
+  prm_threshold: 0.7
+  constitutional_threshold: 0.6
+  robustness_threshold: 0.7
+
+# Storage Settings
+storage:
+  benchmark_results_path: "data/benchmark_results.json"
+  memory_path: "data/agent_memory"
+  evaluation_history_path: "data/evaluation_history.json"
+  export_format: "json"  # or "csv", "parquet"
+
+# Logging Settings
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "data/logs/uraf.log"
+  rotation: "1 week"
+  retention: "1 month"
