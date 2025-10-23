@@ -10,9 +10,9 @@ URAF uses **cutting-edge Python tooling** for maximum developer productivity and
 |------|---------|------|
 | **[uv](https://github.com/astral-sh/uv)** | Package manager | 10-100x faster than pip/poetry, written in Rust |
 | **[ruff](https://github.com/astral-sh/ruff)** | Linter & Formatter | Replaces black, flake8, isort, pyupgrade - 10-100x faster |
+| **[just](https://github.com/casey/just)** | Task runner | Modern just alternative, better syntax, cross-platform |
 | **[pytest](https://pytest.org)** | Testing framework | Industry standard, great async support |
 | **[mypy](https://mypy-lang.org)** | Type checker | Catch bugs before runtime |
-| **Make** | Task runner | Simple, universal, no extra dependencies |
 
 ---
 
@@ -24,11 +24,14 @@ URAF uses **cutting-edge Python tooling** for maximum developer productivity and
 # 1. Install uv (if not already installed)
 pip install uv
 
-# 2. Install all dependencies
+# 2. Install just task runner
+cargo install just  # or: curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash
+
+# 3. Install all dependencies
 uv sync --extra dev
 
-# 3. You're ready!
-make test
+# 4. You're ready!
+just test
 ```
 
 ### Detailed Setup
@@ -55,26 +58,29 @@ uv run python -c "import uraf; print('✅ URAF ready!')"
 ### Essential Commands
 
 ```bash
+# See all available commands
+just --list
+
 # Development
-make dev          # Install with dev dependencies
-make test         # Run all tests
-make lint         # Check code quality
-make format       # Format code
-make fix          # Auto-fix all issues
-make check        # Run lint + typecheck + tests
+just dev          # Install with dev dependencies
+just test         # Run all tests
+just lint         # Check code quality
+just format       # Format code
+just fix          # Auto-fix all issues
+just check        # Run lint + typecheck + tests
 
 # Running URAF
-make demo         # Run feature demonstration
-make run          # Run evaluation with default config
-make run-advanced # Run with all features enabled
+just demo         # Run feature demonstration
+just run          # Run evaluation with default config
+just run-advanced # Run with all features enabled
 
 # Maintenance
-make clean        # Remove generated files
-make update       # Update dependencies
-make help         # Show all commands
+just clean        # Remove generated files
+just update       # Update dependencies
+just env          # Show environment info
 ```
 
-### Manual Commands (without Make)
+### Manual Commands (without just)
 
 ```bash
 # Install dependencies
@@ -109,7 +115,7 @@ URAF/
 ├── .python-version          # Python version (3.11)
 ├── pyproject.toml           # Modern project config (PEP 621)
 ├── uv.lock                  # Locked dependencies
-├── Makefile                 # Development tasks
+├── justfile                 # Development tasks
 ├── .venv/                   # Virtual environment (auto-created)
 ├── uraf/                    # Main package
 │   ├── __init__.py
@@ -144,7 +150,7 @@ URAF/
 
 ```bash
 # Fix everything automatically
-make fix
+just fix
 
 # Or manually
 uv run ruff check --fix uraf/
@@ -159,10 +165,10 @@ uv run ruff format uraf/
 
 ```bash
 # All tests
-make test
+just test
 
 # With coverage
-make test-cov
+just test-cov
 open htmlcov/index.html  # View coverage report
 
 # Specific test
@@ -332,7 +338,7 @@ uv config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 uv cache clean
 
 # Clean all caches
-make clean
+just clean
 rm -rf ~/.cache/uv
 ```
 
@@ -355,8 +361,8 @@ rm -rf ~/.cache/uv
 # Day 1: Setup
 git clone <repo>
 cd URAF
-make dev
-make test
+just dev
+just test
 
 # Day 2: Development
 # 1. Create feature branch
@@ -366,10 +372,10 @@ git checkout -b feature/my-feature
 vim uraf/my_module.py
 
 # 3. Check quality
-make check  # lint + typecheck + test
+just check  # lint + typecheck + test
 
 # 4. Fix issues
-make fix
+just fix
 
 # 5. Commit
 git add .
@@ -403,7 +409,7 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run checks
-        run: make check
+        run: just check
 ```
 
 ---

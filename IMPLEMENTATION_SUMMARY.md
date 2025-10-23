@@ -206,7 +206,7 @@ pip install uv
 uv sync --extra dev
 
 # 3. Run demo
-make demo
+just demo
 ```
 
 ---
@@ -271,17 +271,17 @@ t_test = stats.paired_t_test(scores_a, scores_b)
 ## 🔧 Development Commands
 
 ```bash
-make dev          # Install with dev dependencies
-make test         # Run all tests
-make test-cov     # Run tests with coverage
-make lint         # Check code quality
-make format       # Format code
-make fix          # Auto-fix all issues
-make check        # Run all checks
-make demo         # Run feature demo
-make run          # Run evaluation
-make clean        # Clean generated files
-make help         # Show all commands
+just dev          # Install with dev dependencies
+just test         # Run all tests
+just test-cov     # Run tests with coverage
+just lint         # Check code quality
+just format       # Format code
+just fix          # Auto-fix all issues
+just check        # Run all checks
+just demo         # Run feature demo
+just run          # Run evaluation
+just clean        # Clean generated files
+just help         # Show all commands
 ```
 
 ---
@@ -355,10 +355,10 @@ make help         # Show all commands
 
 ## 🎯 Next Steps
 
-1. **Run the demo:** `make demo`
+1. **Run the demo:** `just demo`
 2. **Read docs:** `README_UPDATED.md`
 3. **Try features:** `examples/demo_new_features.py`
-4. **Run tests:** `make test`
+4. **Run tests:** `just test`
 5. **Explore tooling:** `MODERN_TOOLING.md`
 
 ---
